@@ -181,6 +181,7 @@ def generate_response_with_gemini(prompt: str) -> str:
 
     response = model.generate_content(
         prompt,
+        stream=True,
         generation_config={
             "temperature": 0.3,
             "max_output_tokens": 1024,
@@ -294,14 +295,21 @@ async def chat_endpoint(chat_req: ChatRequest):
     """
 
     print("Prompt:", prompt)
-    # 6. Call Gemini API to generate the answer
-    try:
-        answer = generate_response_with_gemini(prompt)
-    except HTTPException as e:
-        raise e
+    
+    async def sse_generator():
+        # 1. Send metadata (tavily_context, duration) as a single SSE event
+        duration = time.time() - start_time # Calculate duration here, before streaming answer
+        metadata = {"search": tavily_context, "duration": duration}
+        yield f"data: {json.dumps({'type': 'metadata', 'data': metadata})}\n\n"
 
-    duration = time.time() - start_time
-    return ChatResponse(answer=answer, search=tavily_context, duration=duration)
+        # 2. Stream the answer from Gemini as SSE events
+        async for chunk in generate_response_with_gemini(prompt):
+            yield chunk
+
+    return ChatResponse(
+        sse_generator(),
+        media_type="text/event-stream"
+    )
 
 if __name__ == "__main__":
     import uvicorn

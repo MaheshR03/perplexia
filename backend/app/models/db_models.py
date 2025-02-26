@@ -1,0 +1,64 @@
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, LargeBinary
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+from . import db_models  # Import within the module to avoid circular import issues
+from app.core.database import Base
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    clerk_user_id = Column(String, unique=True, index=True) # Clerk user ID
+    username = Column(String, index=True)
+    email = Column(String, unique=True, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    chat_sessions = relationship("ChatSession", back_populates="user")
+    pdf_documents = relationship("PDFDocument", back_populates="user")
+
+class ChatSession(Base):
+    __tablename__ = "chat_sessions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    name = Column(String, default="New Chat") # Optional chat name
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", back_populates="chat_sessions")
+    messages = relationship("ChatMessage", back_populates="chat_session")
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(Integer, ForeignKey("chat_sessions.id"))
+    user_id = Column(Integer, ForeignKey("users.id")) # Optional, for message author if needed
+    content = Column(String)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    is_user_message = Column(Boolean, default=True) # Flag if message is from user or bot
+
+    chat_session = relationship("ChatSession", back_populates="messages")
+    user = relationship("User") # Optional user relationship
+
+
+class PDFDocument(Base):
+    __tablename__ = "pdf_documents"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    filename = Column(String)
+    upload_date = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", back_populates="pdf_documents")
+    pdf_chunks = relationship("PDFChunk", back_populates="pdf_document")
+
+
+class PDFChunk(Base):
+    __tablename__ = "pdf_chunks_metadata" # Renamed to avoid conflict with NeonDB table name
+
+    id = Column(Integer, primary_key=True, index=True)
+    pdf_document_id = Column(Integer, ForeignKey("pdf_documents.id"))
+    chunk_index = Column(Integer) # Order of chunk in the PDF
+    neon_db_chunk_id = Column(String, index=True) # Store an ID if NeonDB provides one, or generate one if not
+
+    pdf_document = relationship("PDFDocument", back_populates="pdf_chunks")

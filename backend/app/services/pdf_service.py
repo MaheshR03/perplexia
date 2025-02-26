@@ -69,7 +69,7 @@ async def store_chunk_to_neondb(chunk_text, embedding, pdf_document_id, user_id,
         document_chunk = DocumentChunk(
             chunk_text=chunk_text,
             embedding=embedding,
-            metadata=json.dumps(metadata)
+            document_metadata=json.dumps(metadata)
         )
         db.add(document_chunk)
         db.commit()

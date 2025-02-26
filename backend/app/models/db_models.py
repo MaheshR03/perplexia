@@ -1,10 +1,9 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, LargeBinary
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Text
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func, Boolean
+from sqlalchemy.sql import func
 from sqlalchemy.dialects import postgresql
 from . import db_models  # Import within the module to avoid circular import issues
 from app.core.database import Base
-
 from pgvector.sqlalchemy import Vector
 
 class User(Base):
@@ -87,5 +86,5 @@ class DocumentChunk(Base):
     id = Column(Integer, primary_key=True, index=True)
     chunk_text = Column(String)
     embedding = Column(Vector(768))
-    metadata = Column(postgresql.JSONB(astext_type=postgresql.Text()))
+    document_metadata = Column(postgresql.JSONB(astext_type=Text))
     created_at = Column(DateTime(timezone=True), server_default=func.now())

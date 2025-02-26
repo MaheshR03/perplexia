@@ -1,9 +1,12 @@
-from sqlalchemy import create_engine, create_async_engine, sessionmaker
+from sqlalchemy import create_engine
+from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import declarative_base, sessionmaker
 from .config import settings
 
-DATABASE_URL = settings.POSTGRES_DB_URL
+
+
+DATABASE_URL = f"postgresql+asyncpg://{settings.SUPABASE_DB_USER}:{settings.SUPABASE_DB_PASSWORD}@{settings.SUPABASE_DB_HOST}:{settings.SUPABASE_DB_PORT}/{settings.SUPABASE_DB_DBNAME}?sslmode=require"
 NEON_DATABASE_URL = f"postgresql+asyncpg://{settings.NEOND_DB_USER}:{settings.NEOND_DB_PASSWORD}@{settings.NEOND_DB_HOST}/{settings.NEOND_DB_NAME}"
 
 engine = create_async_engine(DATABASE_URL)

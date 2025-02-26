@@ -10,9 +10,13 @@ class Settings:
     NEOND_DB_PASSWORD = os.environ.get("NEOND_DB_PASSWORD")
 
     POSTGRES_DB_URL = os.environ.get("POSTGRES_DB_URL")
+    
+    SUPABASE_DB_USER = os.getenv("SUPABASE_DB_USER")
+    SUPABASE_DB_PASSWORD = os.getenv("SUPABASE_DB_PASSWORD")
+    SUPABASE_DB_HOST = os.getenv("SUPABASE_DB_HOST")
+    SUPABASE_DB_PORT = os.getenv("SUPABASE_DB_PORT")
+    SUPABASE_DB_DBNAME = os.getenv("SUPABASE_DB_DBNAME")
 
-    SUPABASE_URL = os.environ.get("SUPABASE_URL")
-    SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 
     JINAAI_API_KEY = os.environ.get("JINAAI_API_KEY")
     GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")

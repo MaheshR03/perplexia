@@ -16,7 +16,7 @@ async def search_neon_chunks(db: Session, query_embedding: list, top_n: int = 5)
         chunks = []
         for row in results:
             chunk_text = row.chunk_text
-            metadata = json.loads(row.metadata) if row.metadata else {}
+            metadata = json.loads(row.document_metadata) if row.metadata else {}
 
             source = metadata.get('filename', 'Unknown Source')
             page = metadata.get('page', 'Unknown Page')

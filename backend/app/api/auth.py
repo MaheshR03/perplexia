@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models import db_models
@@ -9,6 +9,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 clerk_client = ClerkClient(settings.CLERK_SECRET_KEY) # Initialize Clerk client
+router = APIRouter()
 
 async def get_current_user(authorization: str = Header(None), db: Session = Depends(get_db)) -> db_models.User:
     """Authenticates user using Clerk JWT from Authorization header."""
@@ -32,3 +33,11 @@ async def get_current_user(authorization: str = Header(None), db: Session = Depe
     except Exception as e: # Catch JWT verification errors or Clerk API errors
         logger.error(f"Authentication error: {e}", exc_info=True)
         raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+@router.get("/me")
+async def get_me(current_user: db_models.User = Depends(get_current_user)):
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "username": current_user.username
+    }

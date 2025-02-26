@@ -2,7 +2,7 @@ import io
 from PyPDF2 import PdfReader
 from fastapi import HTTPException, UploadFile
 
-from backend.app.models import db_models
+from app.models import db_models
 from .embedding_service import get_embedding
 from app.models.db_models import PDFDocument, PDFChunk, DocumentChunk
 from sqlalchemy.orm import Session

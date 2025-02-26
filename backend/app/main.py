@@ -1,17 +1,31 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 from app.api import chat, pdfs, auth  # Import API routers
-from app.core.database import engine, Base
+from app.core.database import engine, Base, neon_engine, NeonBase 
 import logging 
 
 logging.basicConfig(level=logging.INFO) 
 logger = logging.getLogger(__name__) 
 
-import asyncio
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    #Create Supabase tables (common tables)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    logger.info("Supabase tables created")
 
-Base.metadata.create_all(bind=engine) # Create database tables on startup
+    # Create NeonDB tables (vector‑specific models)
+    async with neon_engine.begin() as neon_conn:
+        await neon_conn.run_sync(NeonBase.metadata.create_all)
+    logger.info("Neon tables created")
+    
+    yield  # This is where the app runs
+    
+    # Shutdown: Add any cleanup code here
+    logger.info("Shutting down application")
 
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -23,7 +37,7 @@ app.add_middleware(
 
 app.include_router(chat.router, prefix="/chat", tags=["Chat"])
 app.include_router(pdfs.router, prefix="/pdfs", tags=["PDFs"])
-app.include_router(auth.router, prefix="/auth", tags=["Auth"]) # If you have auth related endpoints
+app.include_router(auth.router, prefix="/auth", tags=["Auth"]) 
 
 @app.get("/health")
 async def health_check():

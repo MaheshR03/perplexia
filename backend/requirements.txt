@@ -10,3 +10,4 @@ tavily-python
 python-dotenv
 clerk-sdk-python
 pgvector
+python-multipart

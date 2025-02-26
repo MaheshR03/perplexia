@@ -3,7 +3,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy.dialects import postgresql
 from . import db_models  # Import within the module to avoid circular import issues
-from app.core.database import Base
+from app.core.database import Base, NeonBase
 from pgvector.sqlalchemy import Vector
 
 class User(Base):
@@ -80,7 +80,7 @@ class ChatSessionPDF(Base):
     chat_session = relationship("ChatSession", back_populates="pdf_documents_assoc")
     pdf_document = relationship("PDFDocument", back_populates="chat_sessions_assoc")
 
-class DocumentChunk(Base):
+class DocumentChunk(NeonBase):
     __tablename__ = "document_chunks"
 
     id = Column(Integer, primary_key=True, index=True)

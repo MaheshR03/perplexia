@@ -1,6 +1,9 @@
 from tavily import TavilyClient
 from fastapi import HTTPException
 from app.core.config import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 def fetch_tavily_data(query: str) -> str:
     """Fetch extra topical information from Tavilly."""
@@ -10,5 +13,5 @@ def fetch_tavily_data(query: str) -> str:
         print(response)
         return response
     except Exception as e:
-        print(f"Error fetching Tavily data: {e}")
+        logger.error(f"Error fetching Tavily data: {e}", exc_info=True)
         return ""

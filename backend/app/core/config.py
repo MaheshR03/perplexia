@@ -19,5 +19,6 @@ class Settings:
     GOOGLE_VERTEX_API_KEY = os.environ.get("GOOGLE_VERTEX_API_KEY")
 
     CLERK_SECRET_KEY = os.environ.get("CLERK_SECRET_KEY")
+    TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY")
 
 settings = Settings()

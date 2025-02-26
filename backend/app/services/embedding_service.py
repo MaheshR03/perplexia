@@ -1,6 +1,9 @@
 import requests
 from fastapi import HTTPException
 from app.core.config import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 def get_embedding(text: str) -> list:
     """Generates embeddings using Jina AI."""

@@ -4,6 +4,9 @@ from fastapi import HTTPException, UploadFile
 from .embedding_service import get_embedding
 from .neon_service import get_neon_connection
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 async def process_pdf_and_store(file: UploadFile, user_id: int, db): # Added db dependency and user_id
     """Processes PDF, generates embeddings, stores in NeonDB and metadata in PostgreSQL."""
@@ -26,7 +29,7 @@ async def process_pdf_and_store(file: UploadFile, user_id: int, db): # Added db 
         db.commit()
         db.refresh(pdf_document_db) # Get the generated ID
 
-        chunks = chunk_text_into_sentences(sanitized_text) # Implement chunking function
+        chunks = chunk_text_into_segments(sanitized_text) # Implement chunking function
 
         for index, chunk_text in enumerate(chunks):
             embedding = get_embedding(chunk_text) # Generate embedding for each chunk
@@ -46,7 +49,7 @@ async def process_pdf_and_store(file: UploadFile, user_id: int, db): # Added db 
 
     except Exception as e:
         db.rollback() # Rollback in case of any error
-        print(f"Error processing PDF: {str(e)}")
+        logger.error(f"Error processing PDF: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error processing PDF: {str(e)}")
 
 
@@ -70,10 +73,56 @@ async def store_chunk_to_neondb(chunk_text, embedding):
         raise HTTPException(status_code=500, detail=f"Database error storing chunk to NeonDB: {str(e)}")
 
 
-def chunk_text_into_sentences(text):
-    """Simple sentence chunking (can be improved with more sophisticated methods)."""
-    sentences = text.split('. ') # Basic split by sentence ending, improve as needed
-    return sentences # Or implement more advanced chunking logic here
+def chunk_text_into_segments(text, max_chunk_size=512, overlap=50):
+    """
+    More sophisticated text chunking with overlap for better context preservation.
+
+    Args:
+        text (str): The text to chunk
+        max_chunk_size (int): Maximum size of each chunk
+        overlap (int): Number of characters to overlap between chunks
+
+    Returns:
+        list: List of text chunks
+    """
+    if not text:
+        return []
+
+    # First, split by paragraphs
+    paragraphs = [p for p in text.split('\n\n') if p.strip()]
+
+    chunks = []
+    current_chunk = ""
+
+    for paragraph in paragraphs:
+        # If adding this paragraph keeps us under the limit, add it
+        if len(current_chunk) + len(paragraph) < max_chunk_size:
+            current_chunk += paragraph + "\n\n"
+        else:
+            # If current chunk has content, add it to chunks
+            if current_chunk:
+                chunks.append(current_chunk.strip())
+
+            # If paragraph is larger than max_chunk_size, split it
+            if len(paragraph) > max_chunk_size:
+                words = paragraph.split()
+                current_chunk = ""
+
+                for word in words:
+                    if len(current_chunk) + len(word) + 1 < max_chunk_size:
+                        current_chunk += word + " "
+                    else:
+                        chunks.append(current_chunk.strip()) # Add overlap by taking the last few words
+                        overlap_text = " ".join(current_chunk.split()[-overlap:]) if overlap > 0 else ""
+                        current_chunk = overlap_text + " " + word + " "
+            else:
+                current_chunk = paragraph + "\n\n"
+
+    # Add the last chunk if it has content
+    if current_chunk.strip():
+        chunks.append(current_chunk.strip())
+
+    return chunks
 
 
 # Example function to retrieve chunks from NeonDB based on PDF Document ID (you'll need to adjust based on how you link them)
@@ -93,6 +142,7 @@ async def get_neon_chunks_by_pdf_document_id(pdf_document_id: int):
         return [row['chunk_text'] for row in results] # Placeholder return
 
     except Exception as e:
+        logger.error(f"Error retrieving NeonDB chunks: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error retrieving NeonDB chunks: {str(e)}")
     finally:
         await conn.close()

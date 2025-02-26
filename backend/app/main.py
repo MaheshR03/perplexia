@@ -2,6 +2,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import chat, pdfs, auth  # Import API routers
 from app.core.database import engine, Base
+import logging 
+
+logging.basicConfig(level=logging.INFO) 
+logger = logging.getLogger(__name__) 
+
 import asyncio
 
 Base.metadata.create_all(bind=engine) # Create database tables on startup

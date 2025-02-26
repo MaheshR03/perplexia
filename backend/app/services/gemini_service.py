@@ -1,6 +1,9 @@
 import google.generativeai as genai
 from fastapi import HTTPException
 from app.core.config import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 genai.configure(api_key=settings.GEMINI_API_KEY) # Configure Gemini API key
 

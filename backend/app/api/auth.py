@@ -4,6 +4,9 @@ from app.core.database import get_db
 from app.models import db_models
 from clerk import Client as ClerkClient
 from app.core.config import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 clerk_client = ClerkClient(settings.CLERK_SECRET_KEY) # Initialize Clerk client
 
@@ -27,5 +30,5 @@ async def get_current_user(authorization: str = Header(None), db: Session = Depe
             db.refresh(user)
         return user
     except Exception as e: # Catch JWT verification errors or Clerk API errors
-        print(f"Authentication error: {e}")
+        logger.error(f"Authentication error: {e}", exc_info=True)
         raise HTTPException(status_code=401, detail="Invalid or expired token")

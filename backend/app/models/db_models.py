@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, LargeBinary
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
+from sqlalchemy.sql import func, Boolean
 from . import db_models  # Import within the module to avoid circular import issues
 from app.core.database import Base
 
@@ -15,6 +15,7 @@ class User(Base):
 
     chat_sessions = relationship("ChatSession", back_populates="user")
     pdf_documents = relationship("PDFDocument", back_populates="user")
+    chat_sessions_assoc = relationship("ChatSessionPDF", back_populates="user")
 
 class ChatSession(Base):
     __tablename__ = "chat_sessions"
@@ -26,6 +27,8 @@ class ChatSession(Base):
 
     user = relationship("User", back_populates="chat_sessions")
     messages = relationship("ChatMessage", back_populates="chat_session")
+    pdf_documents_assoc = relationship("ChatSessionPDF", back_populates="chat_session") # ADD THIS LINE
+    pdf_documents = relationship("PDFDocument", secondary="chat_session_pdfs", backref="chat_sessions") # ADD THIS LINE
 
 class ChatMessage(Base):
     __tablename__ = "chat_messages"
@@ -62,3 +65,15 @@ class PDFChunk(Base):
     neon_db_chunk_id = Column(String, index=True) # Store an ID if NeonDB provides one, or generate one if not
 
     pdf_document = relationship("PDFDocument", back_populates="pdf_chunks")
+
+class ChatSessionPDF(Base): 
+    """Association table to link chat sessions with PDF documents."""
+    __tablename__ = "chat_session_pdfs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    chat_session_id = Column(Integer, ForeignKey("chat_sessions.id"))
+    pdf_document_id = Column(Integer, ForeignKey("pdf_documents.id"))
+    added_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    chat_session = relationship("ChatSession", back_populates="pdf_documents_assoc")
+    pdf_document = relationship("PDFDocument", back_populates="chat_sessions_assoc")

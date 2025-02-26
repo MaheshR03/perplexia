@@ -1,16 +1,18 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy import create_engine, AsyncSession 
+from sqlalchemy.orm import declarative_base
 from .config import settings
 
 DATABASE_URL = settings.POSTGRES_DB_URL
 
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+engine = create_async_engine(DATABASE_URL) 
+AsyncSessionLocal = sessionmaker( 
+    bind=engine, class_=AsyncSession, expire_on_commit=False 
+)
 
 Base = declarative_base()
 
 def get_db():
-    db = SessionLocal()
+    db = AsyncSessionLocal()
     try:
         yield db
     finally:

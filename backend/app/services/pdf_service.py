@@ -9,7 +9,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-async def process_pdf_and_store(file: UploadFile, user_id: int, db: Session): # Added db dependency and user_id
+async def process_pdf_and_store(file: UploadFile, user_id: int, db: Session):
     """Processes PDF, generates embeddings, stores in NeonDB and metadata in PostgreSQL."""
     if not file.filename.endswith('.pdf'):
         raise HTTPException(status_code=400, detail="Only PDF files are supported")
@@ -62,7 +62,6 @@ async def store_chunk_to_neondb(chunk_text, embedding, pdf_document_id, user_id,
             "user_id": str(user_id),
             "filename": filename,
             "chunk_index": str(chunk_index) 
-            # Add other relevant metadata here
         }
 
         document_chunk = DocumentChunk(
@@ -134,23 +133,27 @@ def chunk_text_into_segments(text, max_chunk_size=512, overlap=50):
 
 
 # Example function to retrieve chunks from NeonDB based on PDF Document ID (you'll need to adjust based on how you link them)
-async def get_neon_chunks_by_pdf_document_id(pdf_document_id: int):
+async def get_neon_chunks_by_pdf_document_id(pdf_document_id: int, db: Session):
     """Retrieves NeonDB chunk texts associated with a PDF Document ID (example, adjust as needed)."""
-    conn = await get_neon_connection()
+
     try:
         #  This is a simplified example, you'll likely need a way to link PDFDocument ID to NeonDB chunks
         #  If you stored NeonDB chunk IDs in PostgreSQL (PDFChunk), you can query based on those.
         #  For now, this is just a placeholder - adjust based on your actual data linking strategy.
-        search_query = """
-            SELECT chunk_text
-            FROM document_chunks -- Assuming document_chunks table
-            LIMIT 10; -- Placeholder, adjust the query to filter by PDFDocument ID or related metadata
-        """ # You'll need to modify this query significantly based on your linking strategy
-        results = await conn.fetch(search_query) # Placeholder query
+        results = await db.execute(
+            db.select(DocumentChunk).limit(10) # Placeholder limit, adjust filter as needed
+        )
         return [row['chunk_text'] for row in results] # Placeholder return
 
     except Exception as e:
         logger.error(f"Error retrieving NeonDB chunks: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error retrieving NeonDB chunks: {str(e)}")
-    finally:
-        await conn.close()
+
+async def list_user_pdfs_handler(current_user: db_models.User, db: Session) -> list[dict]:
+    """Handler for listing user PDFs, offloaded from route."""
+    pdfs = await db.execute(
+        db.select(db_models.PDFDocument)
+        .filter(db_models.PDFDocument.user_id == current_user.id)
+    )
+    pdfs = pdfs.scalars().all()
+    return [{"id": pdf.id, "filename": pdf.filename, "upload_date": pdf.upload_date} for pdf in pdfs]

@@ -40,6 +40,9 @@ async def process_pdf_and_store(file: UploadFile, user_id: int, db): # Added db 
                 pdf_document_id=pdf_document_db.id,
                 chunk_index=index,
                 neon_db_chunk_id=neon_chunk_id # Store NeonDB ID here
+                user_id=user_id, # User ID
+                filename=file.filename, # Or get filename from PDF metadata if more robust
+                chunk_index=index # Or page number if available
             )
             db.add(pdf_chunk_metadata)
 
@@ -53,16 +56,23 @@ async def process_pdf_and_store(file: UploadFile, user_id: int, db): # Added db 
         raise HTTPException(status_code=500, detail=f"Error processing PDF: {str(e)}")
 
 
-async def store_chunk_to_neondb(chunk_text, embedding):
+async def store_chunk_to_neondb(chunk_text, embedding, pdf_document_id, user_id, filename, chunk_index):
     """Stores a text chunk and its embedding in NeonDB. Returns a chunk ID if needed."""
     conn = await get_neon_connection()
     try:
+        metadata = { # Construct metadata JSON
+            "pdf_document_id": str(pdf_document_id), # Store IDs as strings for easier querying in SQL
+            "user_id": str(user_id),
+            "filename": filename,
+            "chunk_index": str(chunk_index) 
+            # Add other relevant metadata here
+        }
         query = """
-            INSERT INTO document_chunks (chunk_text, embedding)
+            INSERT INTO document_chunks (chunk_text, embedding, metadata)
             VALUES ($1, $2)
             RETURNING id; -- Assuming 'id' is the primary key and you want to return it
         """ # Modify if your NeonDB schema is different, and if you want to retrieve an ID
-        result = await conn.fetchrow(query, chunk_text, json.dumps(embedding))
+        result = await conn.fetchrow(query, chunk_text, json.dumps(embedding), json.dumps(metadata))
         await conn.close()
         if result and 'id' in result: # Adjust key name if your ID column is named differently
             return str(result['id']) # Or result['chunk_id'] etc., convert to string for storage

@@ -1,4 +1,5 @@
-from sqlalchemy import create_engine, create_async_engine, sessionmaker, AsyncSession
+from sqlalchemy import create_engine, create_async_engine, sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import declarative_base
 from .config import settings
 
@@ -18,16 +19,16 @@ NeonAsyncSessionLocal = sessionmaker(
 
 Base = declarative_base()
 
-def get_db():
+async def get_db():
     db = AsyncSessionLocal()
     try:
         yield db
     finally:
-        db.close()
+        await db.close()
 
-def get_neon_db():
+async def get_neon_db():
     db = NeonAsyncSessionLocal()
     try:
         yield db
     finally:
-        db.close()
+        await db.close()

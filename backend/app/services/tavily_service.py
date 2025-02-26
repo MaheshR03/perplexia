@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 def fetch_tavily_data(query: str) -> str:
     """Fetch extra topical information from Tavilly."""
     try:
-        client = TavilyClient(api_key=settings.TAVILY_API_KEY) # Initialize with API key if needed
+        client = TavilyClient(api_key=settings.TAVILY_API_KEY)
         response = client.search(query=query)
         print(response)
         return response

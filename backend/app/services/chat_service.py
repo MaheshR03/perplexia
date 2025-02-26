@@ -27,7 +27,8 @@ async def chat_stream_handler(chat_req, request: Request, db: Session, current_u
         await db.commit()
         db.refresh(chat_session)
         chat_session_id = chat_session.id
-
+        
+    chat_history_str = await get_chat_history_str(db, chat_session_id)
     query_embedding = embedding_service.get_embedding(query)
     retrieved_chunks = await neon_service.search_neon_chunks(db, query_embedding, top_n=5)  # Pass db session to neon_service
 
@@ -89,24 +90,7 @@ async def chat_stream_handler(chat_req, request: Request, db: Session, current_u
 
     return StreamingResponse(sse_generator(), media_type="text/event-stream")
 
-    # --- Helper function (moved from route to handler) ---
-    async def get_chat_history_str(db: Session, chat_session_id: int) -> str:
-        """Retrieves and formats chat history as a string."""
-        chat_history = []
-        if chat_session_id:
-            messages_result = await db.execute(
-                db.select(db_models.ChatMessage)
-                .filter(db_models.ChatMessage.session_id == chat_session_id)
-                .order_by(db_models.ChatMessage.created_at.desc()).limit(10)
-            )
-            messages = messages_result.scalars().all()
-            messages = list(reversed(messages))
-            for msg in messages:
-                role = "user" if msg.is_user_message else "assistant"
-                chat_history.append(f"{role}: {msg.content}")
-        return "\n".join(chat_history) if chat_history else "No previous messages in this chat."
-
-async def get_chat_history_str(db: Session, chat_session_id: int) -> str: # Helper function outside handler
+async def get_chat_history_str(db: Session, chat_session_id: int) -> str:
     """Retrieves and formats chat history as a string."""
     chat_history = []
     if chat_session_id:

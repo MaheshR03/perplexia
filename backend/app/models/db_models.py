@@ -5,7 +5,7 @@ from sqlalchemy.dialects import postgresql
 from . import db_models  # Import within the module to avoid circular import issues
 from app.core.database import Base
 
-import pgvector.sqlalchemy
+from pgvector.sqlalchemy import Vector
 
 class User(Base):
     __tablename__ = "users"
@@ -86,6 +86,6 @@ class DocumentChunk(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     chunk_text = Column(String)
-    embedding = Column(pgvector.sqlalchemy.Vector(768))
+    embedding = Column(Vector(768))
     metadata = Column(postgresql.JSONB(astext_type=postgresql.Text()))
     created_at = Column(DateTime(timezone=True), server_default=func.now())

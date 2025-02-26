@@ -1,3 +1,5 @@
+import asyncio
+import json
 import google.generativeai as genai
 from fastapi import HTTPException
 from app.core.config import settings

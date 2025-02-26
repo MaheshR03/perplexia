@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+pydantic
+sqlalchemy
+asyncpg
+requests
+PyPDF2
+google-generativeai
+tavily-python
+supabase
+python-dotenv
+clerk-sdk-python
+pgvector

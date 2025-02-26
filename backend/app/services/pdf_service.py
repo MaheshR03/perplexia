@@ -2,13 +2,14 @@ import io
 from PyPDF2 import PdfReader
 from fastapi import HTTPException, UploadFile
 from .embedding_service import get_embedding
-from .neon_service import get_neon_connection
+from app.models.db_models import PDFDocument, PDFChunk, DocumentChunk
+from sqlalchemy.orm import Session
 import json
 import logging
 
 logger = logging.getLogger(__name__)
 
-async def process_pdf_and_store(file: UploadFile, user_id: int, db): # Added db dependency and user_id
+async def process_pdf_and_store(file: UploadFile, user_id: int, db: Session): # Added db dependency and user_id
     """Processes PDF, generates embeddings, stores in NeonDB and metadata in PostgreSQL."""
     if not file.filename.endswith('.pdf'):
         raise HTTPException(status_code=400, detail="Only PDF files are supported")
@@ -24,7 +25,7 @@ async def process_pdf_and_store(file: UploadFile, user_id: int, db): # Added db 
             raise HTTPException(status_code=400, detail="No text found in the PDF.")
 
         # Store PDF Document metadata first in PostgreSQL
-        pdf_document_db = db_models.PDFDocument(user_id=user_id, filename=file.filename)
+        pdf_document_db = PDFDocument(user_id=user_id, filename=file.filename)
         db.add(pdf_document_db)
         db.commit()
         db.refresh(pdf_document_db) # Get the generated ID
@@ -33,16 +34,13 @@ async def process_pdf_and_store(file: UploadFile, user_id: int, db): # Added db 
 
         for index, chunk_text in enumerate(chunks):
             embedding = get_embedding(chunk_text) # Generate embedding for each chunk
-            neon_chunk_id = await store_chunk_to_neondb(chunk_text, embedding) # Function to store to NeonDB, returns ID if needed
+            neon_chunk_id = await store_chunk_to_neondb(chunk_text, embedding, pdf_document_db.id, user_id, file.filename, index, db) # Function to store to NeonDB, returns ID if needed
 
             # Store PDFChunk metadata in PostgreSQL, linking to PDFDocument and NeonDB ID
-            pdf_chunk_metadata = db_models.PDFChunk(
+            pdf_chunk_metadata = PDFChunk(
                 pdf_document_id=pdf_document_db.id,
                 chunk_index=index,
                 neon_db_chunk_id=neon_chunk_id # Store NeonDB ID here
-                user_id=user_id, # User ID
-                filename=file.filename, # Or get filename from PDF metadata if more robust
-                chunk_index=index # Or page number if available
             )
             db.add(pdf_chunk_metadata)
 
@@ -56,9 +54,8 @@ async def process_pdf_and_store(file: UploadFile, user_id: int, db): # Added db 
         raise HTTPException(status_code=500, detail=f"Error processing PDF: {str(e)}")
 
 
-async def store_chunk_to_neondb(chunk_text, embedding, pdf_document_id, user_id, filename, chunk_index):
-    """Stores a text chunk and its embedding in NeonDB. Returns a chunk ID if needed."""
-    conn = await get_neon_connection()
+async def store_chunk_to_neondb(chunk_text, embedding, pdf_document_id, user_id, filename, chunk_index, db: Session):
+    """Stores a text chunk and its embedding in NeonDB using SQLAlchemy ORM. Returns a chunk ID if needed."""
     try:
         metadata = { # Construct metadata JSON
             "pdf_document_id": str(pdf_document_id), # Store IDs as strings for easier querying in SQL
@@ -67,19 +64,20 @@ async def store_chunk_to_neondb(chunk_text, embedding, pdf_document_id, user_id,
             "chunk_index": str(chunk_index) 
             # Add other relevant metadata here
         }
-        query = """
-            INSERT INTO document_chunks (chunk_text, embedding, metadata)
-            VALUES ($1, $2)
-            RETURNING id; -- Assuming 'id' is the primary key and you want to return it
-        """ # Modify if your NeonDB schema is different, and if you want to retrieve an ID
-        result = await conn.fetchrow(query, chunk_text, json.dumps(embedding), json.dumps(metadata))
-        await conn.close()
-        if result and 'id' in result: # Adjust key name if your ID column is named differently
-            return str(result['id']) # Or result['chunk_id'] etc., convert to string for storage
-        return None # Or generate a UUID here if NeonDB doesn't auto-generate and return IDs
+
+        document_chunk = DocumentChunk(
+            chunk_text=chunk_text,
+            embedding=embedding,
+            metadata=json.dumps(metadata)
+        )
+        db.add(document_chunk)
+        db.commit()
+        db.refresh(document_chunk)
+
+        return str(document_chunk.id) # Return the ID of the stored chunk
 
     except Exception as e:
-        await conn.close()
+        db.rollback()
         raise HTTPException(status_code=500, detail=f"Database error storing chunk to NeonDB: {str(e)}")
 
 

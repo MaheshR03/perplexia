@@ -77,3 +77,12 @@ class ChatSessionPDF(Base):
 
     chat_session = relationship("ChatSession", back_populates="pdf_documents_assoc")
     pdf_document = relationship("PDFDocument", back_populates="chat_sessions_assoc")
+
+class DocumentChunk(Base):
+    __tablename__ = "document_chunks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    chunk_text = Column(String)
+    embedding = Column(LargeBinary)
+    metadata = Column(String)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

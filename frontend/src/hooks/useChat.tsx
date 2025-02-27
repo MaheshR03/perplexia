@@ -116,7 +116,7 @@ export function useChat(initialSessionId?: number) {
 
   const sendMessage = useCallback(
     (message: string) => {
-      if (!message.trim()) return;
+      if (!message.trim() || isLoading) return;
 
       // Add user message immediately
       const userMessage: Message = {
@@ -143,7 +143,7 @@ export function useChat(initialSessionId?: number) {
       const url = "/api" + chatApi.getChatStreamURL(chatRequest);
       setSSEUrl(url);
     },
-    [currentSessionId, isSearchMode]
+    [currentSessionId, isSearchMode, isLoading]
   );
 
   const createNewChat = useCallback(async () => {

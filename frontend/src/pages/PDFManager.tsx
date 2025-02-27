@@ -1,4 +1,3 @@
-import React from "react";
 import { PDFManager as PDFManagerComponent } from "@/components/pdf/PDFManager";
 
 export function PDFManager() {

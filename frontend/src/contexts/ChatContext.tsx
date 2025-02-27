@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect } from "react";
-import { Message, ChatSession } from "@/types";
+import { Message } from "@/types";
 import { useAuth } from "@/hooks/useAuth";
 
 interface ChatContextType {

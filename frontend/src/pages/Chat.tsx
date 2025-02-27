@@ -1,4 +1,3 @@
-import React from "react";
 import { useParams } from "@tanstack/react-router";
 import { ChatContainer } from "@/components/chat/ChatContainer"; // Import ChatContainer
 

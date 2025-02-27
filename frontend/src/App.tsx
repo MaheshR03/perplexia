@@ -1,4 +1,3 @@
-import React from "react";
 import {
   RootRoute,
   Route,
@@ -14,17 +13,22 @@ import { Chat } from "@/pages/Chat";
 import { Landing } from "@/pages/Landing";
 import { Login } from "@/pages/Login";
 import { AuthCallback } from "@/pages/AuthCallback";
-import { PDFManagerPage } from "@/pages/PDFManagerPage";
+import { PDFManager } from "@/pages/PDFManager";
+import { ClerkProvider } from "@clerk/clerk-react";
+
+const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 // Define routes
 const rootRoute = new RootRoute({
   component: () => (
-    <AuthProvider>
-      <ChatProvider>
-        <Outlet />
-        <Toaster position="top-right" />
-      </ChatProvider>
-    </AuthProvider>
+    <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
+      <AuthProvider>
+        <ChatProvider>
+          <Outlet />
+          <Toaster position="top-right" />
+        </ChatProvider>
+      </AuthProvider>
+    </ClerkProvider>
   ),
 });
 
@@ -50,6 +54,7 @@ const authCallbackRoute = new Route({
 // Protected routes with layout
 const layoutRoute = new Route({
   getParentRoute: () => rootRoute,
+  id: "layout",
   component: () => (
     <AppLayout>
       <Outlet />
@@ -72,7 +77,7 @@ const chatSessionRoute = new Route({
 const pdfManagerRoute = new Route({
   getParentRoute: () => layoutRoute,
   path: "/pdfs",
-  component: PDFManagerPage,
+  component: PDFManager,
 });
 
 // Create router instance

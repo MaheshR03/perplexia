@@ -39,10 +39,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(data);
         } catch (error) {
           console.error("Failed to fetch user data:", error);
-          toast({
-            title: "Error",
-            description: "Failed to load user data.",
-            variant: "destructive",
+          toast.error("Failed to load user data.", {
+            description: "Please try again later.",
           });
         } finally {
           setIsLoading(false);

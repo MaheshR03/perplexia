@@ -1,4 +1,3 @@
-import React from "react";
 import { Message } from "@/types";
 import ReactMarkdown from "react-markdown";
 
@@ -26,7 +25,16 @@ export function ChatBubble({
           <p className="whitespace-pre-wrap">{message.content}</p>
         ) : (
           <div>
-            <ReactMarkdown className="prose dark:prose-invert prose-sm max-w-none">
+            <ReactMarkdown
+              components={{
+                p: ({ node, ...props }) => (
+                  <p
+                    className="prose dark:prose-invert prose-sm max-w-none"
+                    {...props}
+                  />
+                ),
+              }}
+            >
               {message.content}
             </ReactMarkdown>
 

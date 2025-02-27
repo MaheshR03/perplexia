@@ -1,4 +1,3 @@
-import React from "react";
 import { PDFDocument } from "@/types";
 import { Button } from "@/components/ui/button";
 import { FileIcon, XIcon } from "lucide-react";

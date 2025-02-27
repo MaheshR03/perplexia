@@ -1,4 +1,3 @@
-import React from "react";
 import { SignIn } from "@clerk/clerk-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -10,7 +9,7 @@ export function Login() {
           <CardTitle className="text-2xl text-center">Sign In</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4">
-          <SignIn afterSignInUrl="/chat" />{" "}
+          <SignIn forceRedirectUrl="/chat" />
           {/* Redirect to /chat after sign-in */}
         </CardContent>
       </Card>

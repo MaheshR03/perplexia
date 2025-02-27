@@ -1,6 +1,4 @@
-import React from "react";
 import { Button } from "@/components/ui/button";
-import { Link } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { ChatContainer } from "@/components/chat/ChatContainer";
 

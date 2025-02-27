@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { ChatInput } from "./ChatInput";
 import { ChatList } from "./ChatList";
 import { SearchToggle } from "./SearchToggle";
@@ -21,8 +21,7 @@ export function ChatContainer({ initialSessionId }: ChatContainerProps) {
     setIsSearchMode,
     sendMessage,
     searchResults,
-    switchSession, // Import switchSession
-    createNewChat, // Import createNewChat
+    switchSession,
   } = useChat(initialSessionId); // Pass initialSessionId to useChat
 
   const { sessionPdfs, loadSessionPDFs } = usePDFs(

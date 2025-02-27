@@ -1,4 +1,4 @@
-import React, { ReactNode } from "react";
+import { ReactNode } from "react";
 import { Header } from "./Header";
 import { ChatSidebar } from "./ChatSidebar";
 import { useAuth } from "@/hooks/useAuth";

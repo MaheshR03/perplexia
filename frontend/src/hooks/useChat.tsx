@@ -57,10 +57,8 @@ export function useChat(initialSessionId?: number) {
     },
     onError: (event) => {
       setIsLoading(false);
-      toast({
-        title: "SSE Error",
+      toast("SSE Error", {
         description: "There was an error streaming the response.",
-        variant: "destructive",
       });
     },
   });
@@ -82,12 +80,9 @@ export function useChat(initialSessionId?: number) {
   // Check message limit for unauthenticated users
   useEffect(() => {
     if (!isAuthenticated && messageCount >= 5) {
-      toast({
-        title: "Message limit reached",
+      toast("Message limit reached", {
         description: "Please sign in to continue chatting.",
-        variant: "destructive",
       });
-      navigate({ to: "/login" });
     }
   }, [messageCount, isAuthenticated, navigate]);
 
@@ -98,10 +93,8 @@ export function useChat(initialSessionId?: number) {
       setSessions(data);
     } catch (error) {
       console.error("Failed to load sessions:", error);
-      toast({
-        title: "Error",
+      toast("Error", {
         description: "Failed to load chat sessions.",
-        variant: "destructive",
       });
     }
   };
@@ -115,10 +108,8 @@ export function useChat(initialSessionId?: number) {
       }
     } catch (error) {
       console.error("Failed to load session messages:", error);
-      toast({
-        title: "Error",
+      toast("Error", {
         description: "Failed to load chat messages.",
-        variant: "destructive",
       });
     }
   };
@@ -169,7 +160,7 @@ export function useChat(initialSessionId?: number) {
       setCurrentSessionId(sessionId);
       setMessages([]); // Clear messages before loading new session messages
       setSearchResults(""); // Clear search results
-      navigate({ to: `/chat/\$${sessionId}` }); // Navigate to session-specific URL
+      navigate({ to: `/chat/${sessionId}` }); // Navigate to session-specific URL
     },
     [disconnectSSE, navigate]
   );
@@ -186,16 +177,13 @@ export function useChat(initialSessionId?: number) {
         )
       );
 
-      toast({
-        title: "Success",
+      toast("Success", {
         description: "Chat renamed successfully.",
       });
     } catch (error) {
       console.error("Failed to rename session:", error);
-      toast({
-        title: "Error",
+      toast("Error", {
         description: "Failed to rename chat.",
-        variant: "destructive",
       });
     }
   };
@@ -213,16 +201,13 @@ export function useChat(initialSessionId?: number) {
         createNewChat();
       }
 
-      toast({
-        title: "Success",
+      toast("Success", {
         description: "Chat deleted successfully.",
       });
     } catch (error) {
       console.error("Failed to delete session:", error);
-      toast({
-        title: "Error",
+      toast("Error", {
         description: "Failed to delete chat.",
-        variant: "destructive",
       });
     }
   };

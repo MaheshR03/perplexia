@@ -18,11 +18,7 @@ export function usePDFs(sessionId?: number) {
       setPdfs(data);
     } catch (error) {
       console.error("Failed to load PDFs:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load your PDFs.",
-        variant: "destructive",
-      });
+      toast.error("Failed to load your PDFs.");
     } finally {
       setIsLoading(false);
     }
@@ -39,11 +35,7 @@ export function usePDFs(sessionId?: number) {
       setSessionPdfs(data);
     } catch (error) {
       console.error(`Failed to load PDFs for session ${sessionId}:`, error);
-      toast({
-        title: "Error",
-        description: "Failed to load PDFs for this chat.",
-        variant: "destructive",
-      });
+      toast.error("Failed to load PDFs for this chat.");
     } finally {
       setIsLoading(false);
     }
@@ -56,21 +48,14 @@ export function usePDFs(sessionId?: number) {
       const { data, error } = await pdfApi.uploadPDF(file);
       if (error) throw new Error(error);
 
-      toast({
-        title: "PDF Uploaded",
-        description: "Your PDF has been processed successfully.",
-      });
+      toast.success("Your PDF has been processed successfully.");
 
       // Refresh PDF list
       await loadPDFs();
       return data.pdf_document_id;
     } catch (error) {
       console.error("Failed to upload PDF:", error);
-      toast({
-        title: "Upload Failed",
-        description: "Failed to upload and process your PDF.",
-        variant: "destructive",
-      });
+      toast.error("Failed to upload and process your PDF.");
       return null;
     } finally {
       setIsUploading(false);
@@ -80,11 +65,7 @@ export function usePDFs(sessionId?: number) {
   // Add a PDF to current session
   const addPDFToSession = async (pdfId: number, sesId: number = sessionId!) => {
     if (!sesId) {
-      toast({
-        title: "Error",
-        description: "No active chat selected.",
-        variant: "destructive",
-      });
+      toast.error("No active chat selected.");
       return;
     }
 
@@ -95,17 +76,10 @@ export function usePDFs(sessionId?: number) {
       // Refresh session PDFs
       await loadSessionPDFs(sesId);
 
-      toast({
-        title: "Success",
-        description: "PDF added to chat context.",
-      });
+      toast.success("PDF added to chat context.");
     } catch (error) {
       console.error("Failed to add PDF to session:", error);
-      toast({
-        title: "Error",
-        description: "Failed to add PDF to chat.",
-        variant: "destructive",
-      });
+      toast.error("Failed to add PDF to chat.");
     }
   };
 
@@ -114,7 +88,10 @@ export function usePDFs(sessionId?: number) {
     pdfId: number,
     sesId: number = sessionId!
   ) => {
-    if (!sesId) return;
+    if (!sesId) {
+      toast.error("No active chat selected.");
+      return;
+    }
 
     try {
       const { data, error } = await pdfApi.removePDFFromSession(sesId, pdfId);
@@ -123,17 +100,10 @@ export function usePDFs(sessionId?: number) {
       // Update session PDFs locally
       setSessionPdfs((prev) => prev.filter((pdf) => pdf.id !== pdfId));
 
-      toast({
-        title: "Success",
-        description: "PDF removed from chat context.",
-      });
+      toast.success("PDF removed from chat context.");
     } catch (error) {
       console.error("Failed to remove PDF from session:", error);
-      toast({
-        title: "Error",
-        description: "Failed to remove PDF from chat.",
-        variant: "destructive",
-      });
+      toast.error("Failed to remove PDF from chat.");
     }
   };
 
@@ -143,15 +113,13 @@ export function usePDFs(sessionId?: number) {
     if (sessionId) {
       loadSessionPDFs(sessionId);
     }
-  }, [loadPDFs, loadSessionPDFs, sessionId]); // Added dependencies
+  }, [loadPDFs, loadSessionPDFs, sessionId]);
 
   return {
     pdfs,
     sessionPdfs,
     isLoading,
     isUploading,
-    loadPDFs,
-    loadSessionPDFs,
     uploadPDF,
     addPDFToSession,
     removePDFFromSession,

@@ -23,7 +23,11 @@ export function useChat(initialSessionId?: number) {
   const [sseUrl, setSSEUrl] = useState<string | null>(null);
 
   // SSE hook for streaming responses
-  const { isConnected, error } = useSSE(sseUrl, {
+  const {
+    isConnected,
+    error,
+    disconnect: disconnectSSE,
+  } = useSSE(sseUrl, {
     onMetadata: (metadata: MetadataResponse) => {
       if (metadata.search) {
         setSearchResults(metadata.search);
@@ -51,6 +55,14 @@ export function useChat(initialSessionId?: number) {
         setCurrentMessage("");
       }
     },
+    onError: (event) => {
+      setIsLoading(false);
+      toast({
+        title: "SSE Error",
+        description: "There was an error streaming the response.",
+        variant: "destructive",
+      });
+    },
   });
 
   // Load sessions if authenticated
@@ -69,7 +81,7 @@ export function useChat(initialSessionId?: number) {
 
   // Check message limit for unauthenticated users
   useEffect(() => {
-    if (!isAuthenticated && messageCount >= 10) {
+    if (!isAuthenticated && messageCount >= 5) {
       toast({
         title: "Message limit reached",
         description: "Please sign in to continue chatting.",
@@ -77,7 +89,7 @@ export function useChat(initialSessionId?: number) {
       });
       navigate({ to: "/login" });
     }
-  }, [messageCount, isAuthenticated]);
+  }, [messageCount, isAuthenticated, navigate]);
 
   const loadSessions = async () => {
     try {
@@ -126,6 +138,8 @@ export function useChat(initialSessionId?: number) {
       setMessages((prev) => [...prev, userMessage]);
       setMessageCount((prev) => prev + 1);
       setIsLoading(true);
+      setSearchResults(""); // Clear previous search results
+      setCurrentMessage(""); // Clear current message in case of interruptions
 
       // Prepare chat request
       const chatRequest: ChatRequest = {
@@ -141,15 +155,24 @@ export function useChat(initialSessionId?: number) {
     [currentSessionId, isSearchMode]
   );
 
-  const createNewChat = useCallback(() => {
+  const createNewChat = useCallback(async () => {
+    disconnectSSE(); // Disconnect existing SSE if any
     setCurrentSessionId(null);
     setMessages([]);
     setSearchResults("");
-  }, []);
+    navigate({ to: "/chat" }); // Navigate to base chat URL
+  }, [disconnectSSE, navigate]);
 
-  const switchSession = useCallback((sessionId: number) => {
-    setCurrentSessionId(sessionId);
-  }, []);
+  const switchSession = useCallback(
+    async (sessionId: number) => {
+      disconnectSSE(); // Disconnect existing SSE before switching
+      setCurrentSessionId(sessionId);
+      setMessages([]); // Clear messages before loading new session messages
+      setSearchResults(""); // Clear search results
+      navigate({ to: `/chat/\$${sessionId}` }); // Navigate to session-specific URL
+    },
+    [disconnectSSE, navigate]
+  );
 
   const renameSession = async (sessionId: number, name: string) => {
     try {
@@ -212,6 +235,7 @@ export function useChat(initialSessionId?: number) {
     isSearchMode,
     searchResults,
     currentMessage,
+    messageCount,
     sendMessage,
     setIsSearchMode,
     createNewChat,

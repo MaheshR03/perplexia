@@ -1,26 +1,15 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { useParams } from "@tanstack/react-router";
-import { ChatList } from "@/components/chat/ChatList";
-import { useChat } from "@/hooks/useChat";
-import { usePDFs } from "@/hooks/usePDFs";
+import { ChatContainer } from "@/components/chat/ChatContainer"; // Import ChatContainer
 
 export function Chat() {
-  const params = useParams({ from: "/chat/$id" });
-  const chatId = parseInt(params.id, 10);
-
-  const { switchSession } = useChat();
-  const { loadSessionPDFs } = usePDFs();
-
-  useEffect(() => {
-    if (chatId) {
-      switchSession(chatId);
-      loadSessionPDFs(chatId);
-    }
-  }, [chatId]);
+  const params = useParams({ from: "/chat/$sessionId" });
+  const sessionId = parseInt(params.sessionId, 10); // Corrected param name to sessionId
 
   return (
     <div className="flex flex-col h-full">
-      <ChatList />
+      <ChatContainer initialSessionId={sessionId} />{" "}
+      {/* Use ChatContainer and pass sessionId */}
     </div>
   );
 }

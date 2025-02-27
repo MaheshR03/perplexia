@@ -1,15 +1,20 @@
-import React from 'react';
-import { RootRoute, Route, Router, RouterProvider, Outlet } from '@tanstack/react-router';
-import { Toaster } from '@/components/ui/sonner';
-import { AuthProvider } from '@/contexts/AuthContext';
-import { ChatProvider } from '@/contexts/ChatContext';
-import { AppLayout } from '@/components/layout/AppLayout';
-import { Chat } from '@/pages/Chat';
-import { Landing } from '@/pages/Landing';
-import { Login } from '@/pages/Login';
-import { AuthCallback } from '@/pages/AuthCallback';
-import { PDFManagerPage } from '@/pages/PDFManagerPage';
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import React from "react";
+import {
+  RootRoute,
+  Route,
+  Router,
+  RouterProvider,
+  Outlet,
+} from "@tanstack/react-router";
+import { Toaster } from "@/components/ui/sonner";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ChatProvider } from "@/contexts/ChatContext";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { Chat } from "@/pages/Chat";
+import { Landing } from "@/pages/Landing";
+import { Login } from "@/pages/Login";
+import { AuthCallback } from "@/pages/AuthCallback";
+import { PDFManagerPage } from "@/pages/PDFManagerPage";
 
 // Define routes
 const rootRoute = new RootRoute({
@@ -26,19 +31,19 @@ const rootRoute = new RootRoute({
 // Public routes
 const landingRoute = new Route({
   getParentRoute: () => rootRoute,
-  path: '/',
+  path: "/",
   component: Landing,
 });
 
 const loginRoute = new Route({
   getParentRoute: () => rootRoute,
-  path: '/login',
+  path: "/login",
   component: Login,
 });
 
 const authCallbackRoute = new Route({
   getParentRoute: () => rootRoute,
-  path: '/auth-callback',
+  path: "/auth-callback",
   component: AuthCallback,
 });
 
@@ -46,29 +51,27 @@ const authCallbackRoute = new Route({
 const layoutRoute = new Route({
   getParentRoute: () => rootRoute,
   component: () => (
-    <ProtectedRoute>
-      <AppLayout>
-        <Outlet />
-      </AppLayout>
-    </ProtectedRoute>
+    <AppLayout>
+      <Outlet />
+    </AppLayout>
   ),
 });
 
 const chatRoute = new Route({
   getParentRoute: () => layoutRoute,
-  path: '/chat',
+  path: "/chat",
   component: Chat,
 });
 
 const chatSessionRoute = new Route({
   getParentRoute: () => layoutRoute,
-  path: '/chat/$sessionId',
+  path: "/chat/$sessionId",
   component: Chat,
 });
 
 const pdfManagerRoute = new Route({
   getParentRoute: () => layoutRoute,
-  path: '/pdfs',
+  path: "/pdfs",
   component: PDFManagerPage,
 });
 
@@ -77,11 +80,13 @@ const routeTree = rootRoute.addChildren([
   landingRoute,
   loginRoute,
   authCallbackRoute,
-  layoutRoute.addChildren([
-    chatRoute,
-    chatSessionRoute,
-    pdfManagerRoute,
-  ]),
+  layoutRoute.addChildren([chatRoute, chatSessionRoute, pdfManagerRoute]),
 ]);
 
-const router =
+const router = new Router({ routeTree }); // Corrected variable name
+
+function App() {
+  return <RouterProvider router={router} />;
+}
+
+export default App;

@@ -6,7 +6,12 @@ import { PDFList } from "../pdf/PDFList";
 import { useChat } from "@/hooks/useChat";
 import { usePDFs } from "@/hooks/usePDFs";
 
-export function ChatContainer() {
+interface ChatContainerProps {
+  initialSessionId?: number; // Accept initialSessionId as prop
+}
+
+export function ChatContainer({ initialSessionId }: ChatContainerProps) {
+  // Destructure initialSessionId
   const {
     messages,
     currentSessionId,
@@ -16,7 +21,9 @@ export function ChatContainer() {
     setIsSearchMode,
     sendMessage,
     searchResults,
-  } = useChat();
+    switchSession, // Import switchSession
+    createNewChat, // Import createNewChat
+  } = useChat(initialSessionId); // Pass initialSessionId to useChat
 
   const { sessionPdfs, loadSessionPDFs } = usePDFs(
     currentSessionId || undefined
@@ -34,8 +41,12 @@ export function ChatContainer() {
   useEffect(() => {
     if (currentSessionId) {
       loadSessionPDFs(currentSessionId);
+    } else if (initialSessionId) {
+      // Load session PDFs if initialSessionId is provided on initial mount
+      loadSessionPDFs(initialSessionId);
+      switchSession(initialSessionId); // Also switch to the initial session
     }
-  }, [currentSessionId]);
+  }, [currentSessionId, initialSessionId, loadSessionPDFs, switchSession]); // Added dependencies
 
   return (
     <div className="flex flex-col h-full">

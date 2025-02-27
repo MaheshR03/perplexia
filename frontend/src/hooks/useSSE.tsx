@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { MetadataResponse } from "@/types";
 
 interface SSEOptions {
@@ -18,7 +18,8 @@ export function useSSE(url: string | null, options: SSEOptions = {}) {
   const eventSourceRef = useRef<EventSource | null>(null);
 
   // Function to connect to SSE
-  const connect = () => {
+  const connect = useCallback(() => {
+    // Use useCallback
     if (!url) return;
 
     // Close any existing connection
@@ -41,6 +42,7 @@ export function useSSE(url: string | null, options: SSEOptions = {}) {
       setError(event);
       setIsConnected(false);
       options.onError?.(event);
+      options.onClose?.(); // Call onClose on error as well to cleanup loading state
       eventSource.close();
     };
 
@@ -58,24 +60,31 @@ export function useSSE(url: string | null, options: SSEOptions = {}) {
         console.error("Error parsing SSE data:", e);
       }
     };
-  };
+
+    eventSource.close = () => {
+      // Add onclose handler
+      setIsConnected(false);
+      options.onClose?.();
+    };
+  }, [url, options]); // Add url and options to useCallback dependencies
 
   // Function to disconnect from SSE
-  const disconnect = () => {
+  const disconnect = useCallback(() => {
+    // Use useCallback
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
       eventSourceRef.current = null;
       setIsConnected(false);
       options.onClose?.();
     }
-  };
+  }, [options]); // Add options to useCallback dependencies
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       disconnect();
     };
-  }, []);
+  }, [disconnect]); // Add disconnect to useEffect dependencies
 
   // Connect when URL changes
   useEffect(() => {
@@ -84,7 +93,7 @@ export function useSSE(url: string | null, options: SSEOptions = {}) {
     } else {
       disconnect();
     }
-  }, [url]);
+  }, [url, connect, disconnect]); // Add connect and disconnect to useEffect dependencies
 
   return {
     isConnected,

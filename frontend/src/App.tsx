@@ -1,37 +1,87 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
-import "./App.css";
-import { Toaster } from "@/components/ui/sonner";
+import React from 'react';
+import { RootRoute, Route, Router, RouterProvider, Outlet } from '@tanstack/react-router';
+import { Toaster } from '@/components/ui/sonner';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { ChatProvider } from '@/contexts/ChatContext';
+import { AppLayout } from '@/components/layout/AppLayout';
+import { Chat } from '@/pages/Chat';
+import { Landing } from '@/pages/Landing';
+import { Login } from '@/pages/Login';
+import { AuthCallback } from '@/pages/AuthCallback';
+import { PDFManagerPage } from '@/pages/PDFManagerPage';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
-function App() {
-  const [count, setCount] = useState(0);
+// Define routes
+const rootRoute = new RootRoute({
+  component: () => (
+    <AuthProvider>
+      <ChatProvider>
+        <Outlet />
+        <Toaster position="top-right" />
+      </ChatProvider>
+    </AuthProvider>
+  ),
+});
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-      <Toaster />
-    </>
-  );
-}
+// Public routes
+const landingRoute = new Route({
+  getParentRoute: () => rootRoute,
+  path: '/',
+  component: Landing,
+});
 
-export default App;
+const loginRoute = new Route({
+  getParentRoute: () => rootRoute,
+  path: '/login',
+  component: Login,
+});
+
+const authCallbackRoute = new Route({
+  getParentRoute: () => rootRoute,
+  path: '/auth-callback',
+  component: AuthCallback,
+});
+
+// Protected routes with layout
+const layoutRoute = new Route({
+  getParentRoute: () => rootRoute,
+  component: () => (
+    <ProtectedRoute>
+      <AppLayout>
+        <Outlet />
+      </AppLayout>
+    </ProtectedRoute>
+  ),
+});
+
+const chatRoute = new Route({
+  getParentRoute: () => layoutRoute,
+  path: '/chat',
+  component: Chat,
+});
+
+const chatSessionRoute = new Route({
+  getParentRoute: () => layoutRoute,
+  path: '/chat/$sessionId',
+  component: Chat,
+});
+
+const pdfManagerRoute = new Route({
+  getParentRoute: () => layoutRoute,
+  path: '/pdfs',
+  component: PDFManagerPage,
+});
+
+// Create router instance
+const routeTree = rootRoute.addChildren([
+  landingRoute,
+  loginRoute,
+  authCallbackRoute,
+  layoutRoute.addChildren([
+    chatRoute,
+    chatSessionRoute,
+    pdfManagerRoute,
+  ]),
+]);
+
+const router =

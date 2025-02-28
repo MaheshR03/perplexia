@@ -1,38 +1,112 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 from app.core.database import get_db
 from app.models import db_models
-from clerk import Client as ClerkClient
 from app.core.config import settings
-import logging
+import requests
+from jose import jwt, jwk
+from jose.exceptions import JWTError
 
 logger = logging.getLogger(__name__)
 
-clerk_client = ClerkClient(settings.CLERK_SECRET_KEY) # Initialize Clerk client
 router = APIRouter()
 
-async def get_current_user(authorization: str = Header(None), db: Session = Depends(get_db)) -> db_models.User:
+# Set up Clerk URLs based on your settings
+CLERK_ISSUER = settings.CLERK_ISSUER
+CLERK_JWKS_URL = f"{settings.CLERK_ISSUER}/.well-known/jwks.json"
+
+def get_jwks():
+    """Fetch the JSON Web Key Set from Clerk"""
+    try:
+        response = requests.get(CLERK_JWKS_URL)
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        logger.error(f"Failed to fetch JWKS: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch authentication keys")
+
+def get_public_key(kid):
+    """Get the public key for the given key ID"""
+    jwks = get_jwks()
+    for key in jwks.get('keys', []):
+        if key.get('kid') == kid:
+            return jwk.construct(key)
+    raise HTTPException(status_code=401, detail="Invalid token key ID")
+
+async def verify_jwt(token):
+    """Verify the JWT token using Clerk's public keys"""
+    try:
+        headers = jwt.get_unverified_headers(token)
+        kid = headers.get('kid')
+        
+        if not kid:
+            raise HTTPException(status_code=401, detail="Missing key ID in token header")
+        
+        public_key = get_public_key(kid)
+        
+        # Decode and verify the token
+        payload = jwt.decode(
+            token, 
+            public_key.to_pem().decode('utf-8'),
+            algorithms=['RS256'],
+            audience=settings.CLERK_JWT_AUDIENCE,
+            issuer=CLERK_ISSUER
+        )
+        
+        logger.info(f"Token verification successful for user: {payload.get('sub')}")
+        return payload
+    except JWTError as e:
+        logger.error(f"Token verification failed: {e}")
+        raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
+    except Exception as e:
+        logger.error(f"Token verification failed: {e}")
+        raise HTTPException(status_code=401, detail="Token verification failed")
+
+async def get_current_user(authorization: str = Header(None), db = Depends(get_db)) -> db_models.User:
     """Authenticates user using Clerk JWT from Authorization header."""
     if not authorization:
         raise HTTPException(status_code=401, detail="Authorization required")
+    
     try:
-        token = authorization.split(" ")[1] # Assuming "Bearer <token>" format
-        jwt_payload = clerk_client.verify_token(token) # Verify JWT with Clerk
-
-        clerk_user_id = jwt_payload.get('sub') # Clerk user ID is typically in 'sub'
-
-        user = db.query(db_models.User).filter(db_models.User.clerk_user_id == clerk_user_id).first()
+        token = authorization.split(" ")[1]  # Assuming "Bearer <token>" format
+        
+        # Log the token verification attempt
+        logger.info("Attempting to verify Clerk token")
+        
+        # Get the JWT payload
+        payload = await verify_jwt(token)
+        
+        # Extract user ID from verified JWT
+        clerk_user_id = payload.get('sub')
+        if not clerk_user_id:
+            raise HTTPException(status_code=401, detail="User ID not found in token")
+        
+        # Find user in database using async query style
+        stmt = select(db_models.User).where(db_models.User.clerk_user_id == clerk_user_id)
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
+        
         if not user:
-            # If user doesn't exist in your DB, create one (basic example, expand as needed)
-            user_info = clerk_client.users.retrieve(clerk_user_id) # Get user info from Clerk
-            user = db_models.User(clerk_user_id=clerk_user_id, username=user_info.username, email=user_info.email_addresses[0].email_address if user_info.email_addresses else None) # Basic user creation
+            # Create a new user
+            email = payload.get('email')
+            user = db_models.User(
+                clerk_user_id=clerk_user_id,
+                username=clerk_user_id.split('_')[-1],  # Basic username from user ID
+                email=email
+            )
             db.add(user)
-            db.commit()
-            db.refresh(user)
+            await db.commit()
+            await db.refresh(user)
+        
         return user
-    except Exception as e: # Catch JWT verification errors or Clerk API errors
+            
+    except HTTPException:
+        raise
+    except Exception as e:
         logger.error(f"Authentication error: {e}", exc_info=True)
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
+        raise HTTPException(status_code=500, detail="Authentication system error")
 
 @router.get("/me")
 async def get_me(current_user: db_models.User = Depends(get_current_user)):

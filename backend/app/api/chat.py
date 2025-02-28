@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
 import time
 import json
+from sqlalchemy import select, delete  # Add proper imports
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.chat_models import ChatRequest
@@ -30,8 +31,9 @@ async def chat_stream_endpoint(
 @router.get("/sessions", response_model=list[dict]) 
 async def list_chat_sessions(db: Session = Depends(get_db), current_user: db_models.User = Depends(auth.get_current_user)):
     """Lists all chat sessions for the current user."""
-    sessions = await db.execute(db.select(db_models.ChatSession).filter(db_models.ChatSession.user_id == current_user.id)) # Async DB query
-    sessions = sessions.scalars().all() # Get scalar results
+    query = select(db_models.ChatSession).where(db_models.ChatSession.user_id == current_user.id)
+    result = await db.execute(query)
+    sessions = result.scalars().all() # Get scalar results
     return [{
         "id": session.id,
         "name": session.name,
@@ -42,20 +44,20 @@ async def list_chat_sessions(db: Session = Depends(get_db), current_user: db_mod
 @router.get("/sessions/{session_id}", response_model=dict) 
 async def get_chat_session(session_id: int, db: Session = Depends(get_db), current_user: db_models.User = Depends(auth.get_current_user)):
     """Gets details of a specific chat session including messages."""
-    session_result = await db.execute( # Async DB query
-        db.select(db_models.ChatSession)
-        .filter(db_models.ChatSession.id == session_id, db_models.ChatSession.user_id == current_user.id)
+    query = select(db_models.ChatSession).where(
+        db_models.ChatSession.id == session_id,
+        db_models.ChatSession.user_id == current_user.id
     )
-    session = session_result.scalar_one_or_none() # Get single scalar result or None
+    result = await db.execute(query)
+    session = result.scalar_one_or_none() # Get single scalar result or None
 
     if not session:
         raise HTTPException(status_code=404, detail="Chat session not found")
 
-    messages_result = await db.execute( # Async DB query
-        db.select(db_models.ChatMessage)
-        .filter(db_models.ChatMessage.session_id == session_id)
-        .order_by(db_models.ChatMessage.created_at)
-    )
+    messages_query = select(db_models.ChatMessage).where(
+        db_models.ChatMessage.session_id == session_id
+    ).order_by(db_models.ChatMessage.created_at)
+    messages_result = await db.execute(messages_query)
     messages = messages_result.scalars().all() # Get scalar results
 
     return {
@@ -78,11 +80,12 @@ async def update_chat_session(
     current_user: db_models.User = Depends(auth.get_current_user)
 ):
     """Updates chat session properties (e.g., name)."""
-    session_result = await db.execute( # Async DB query
-        db.select(db_models.ChatSession)
-        .filter(db_models.ChatSession.id == session_id, db_models.ChatSession.user_id == current_user.id)
+    query = select(db_models.ChatSession).where(
+        db_models.ChatSession.id == session_id,
+        db_models.ChatSession.user_id == current_user.id
     )
-    session = session_result.scalar_one_or_none() # Get single scalar result or None
+    result = await db.execute(query)
+    session = result.scalar_one_or_none() # Get single scalar result or None
 
     if not session:
         raise HTTPException(status_code=404, detail="Chat session not found")
@@ -97,28 +100,29 @@ async def update_chat_session(
 @router.delete("/sessions/{session_id}", response_model=dict)
 async def delete_chat_session(session_id: int, db: Session = Depends(get_db), current_user: db_models.User = Depends(auth.get_current_user)):
     """Deletes a chat session and all its messages."""
-    session_result = await db.execute( # Async DB query
-        db.select(db_models.ChatSession)
-        .filter(db_models.ChatSession.id == session_id, db_models.ChatSession.user_id == current_user.id)
+    query = select(db_models.ChatSession).where(
+        db_models.ChatSession.id == session_id,
+        db_models.ChatSession.user_id == current_user.id
     )
-    session = session_result.scalar_one_or_none() # Get single scalar result or None
+    result = await db.execute(query)
+    session = result.scalar_one_or_none() # Get single scalar result or None
 
     if not session:
         raise HTTPException(status_code=404, detail="Chat session not found")
 
     # Delete all messages in the session - Async delete
-    await db.execute(
-        db.delete(db_models.ChatMessage)
-        .where(db_models.ChatMessage.session_id == session_id)
+    delete_messages = delete(db_models.ChatMessage).where(
+        db_models.ChatMessage.session_id == session_id
     )
+    await db.execute(delete_messages)
 
     # Delete session-PDF associations if you added those - Async delete
-    await db.execute(
-        db.delete(db_models.ChatSessionPDF)
-        .where(db_models.ChatSessionPDF.chat_session_id == session_id)
+    delete_pdf_assoc = delete(db_models.ChatSessionPDF).where(
+        db_models.ChatSessionPDF.chat_session_id == session_id
     )
+    await db.execute(delete_pdf_assoc)
 
-    # Delete the session itself - Async delete
+    # Delete the session itself
     await db.delete(session)
     await db.commit() # Async commit
 

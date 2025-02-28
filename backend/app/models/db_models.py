@@ -2,7 +2,6 @@ from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, T
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy.dialects import postgresql
-from . import db_models  # Import within the module to avoid circular import issues
 from app.core.database import Base, NeonBase
 from pgvector.sqlalchemy import Vector
 
@@ -17,7 +16,6 @@ class User(Base):
 
     chat_sessions = relationship("ChatSession", back_populates="user")
     pdf_documents = relationship("PDFDocument", back_populates="user")
-    chat_sessions_assoc = relationship("ChatSessionPDF", back_populates="user")
 
 class ChatSession(Base):
     __tablename__ = "chat_sessions"
@@ -29,8 +27,8 @@ class ChatSession(Base):
 
     user = relationship("User", back_populates="chat_sessions")
     messages = relationship("ChatMessage", back_populates="chat_session")
-    pdf_documents_assoc = relationship("ChatSessionPDF", back_populates="chat_session") # ADD THIS LINE
-    pdf_documents = relationship("PDFDocument", secondary="chat_session_pdfs", backref="chat_sessions") # ADD THIS LINE
+    pdf_documents_assoc = relationship("ChatSessionPDF", back_populates="chat_session")
+    pdf_documents = relationship("PDFDocument", secondary="chat_session_pdfs", backref="chat_sessions")
 
 class ChatMessage(Base):
     __tablename__ = "chat_messages"
@@ -45,7 +43,6 @@ class ChatMessage(Base):
     chat_session = relationship("ChatSession", back_populates="messages")
     user = relationship("User") # Optional user relationship
 
-
 class PDFDocument(Base):
     __tablename__ = "pdf_documents"
 
@@ -56,7 +53,7 @@ class PDFDocument(Base):
 
     user = relationship("User", back_populates="pdf_documents")
     pdf_chunks = relationship("PDFChunk", back_populates="pdf_document")
-
+    chat_sessions_assoc = relationship("ChatSessionPDF", back_populates="pdf_document")
 
 class PDFChunk(Base):
     __tablename__ = "pdf_chunks_metadata" # Renamed to avoid conflict with NeonDB table name

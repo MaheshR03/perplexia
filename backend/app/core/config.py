@@ -22,7 +22,10 @@ class Settings:
     GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
     GOOGLE_VERTEX_API_KEY = os.environ.get("GOOGLE_VERTEX_API_KEY")
 
+    CLERK_ISSUER: str = os.getenv("CLERK_ISSUER")
+    CLERK_JWT_AUDIENCE: str = os.getenv("CLERK_JWT_AUDIENCE", "http://localhost:5173") 
     CLERK_SECRET_KEY = os.environ.get("CLERK_SECRET_KEY")
     TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY")
+
 
 settings = Settings()

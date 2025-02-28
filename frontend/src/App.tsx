@@ -1,7 +1,6 @@
 import { Monitoring } from "react-scan/monitoring";
 import {
   createRootRoute,
-  Route,
   Router,
   RouterProvider,
   Outlet,
@@ -9,7 +8,6 @@ import {
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ChatProvider } from "@/contexts/ChatContext";
-import { AppLayout } from "@/components/layout/AppLayout";
 import { ClerkProvider } from "@clerk/clerk-react";
 import { generateRoutes } from "@/utils/routeGenerator";
 
@@ -36,11 +34,10 @@ const rootRoute = createRootRoute({
 });
 
 // Generate routes from pages folder
-const { routes, layoutRoute } = generateRoutes(rootRoute);
+const { routes } = generateRoutes(rootRoute);
 
 // Create router instance
 const routeTree = rootRoute.addChildren(routes);
-
 const router = new Router({ routeTree });
 
 function App() {

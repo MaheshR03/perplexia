@@ -9,96 +9,104 @@ interface SSEOptions {
   onClose?: () => void;
 }
 
-/**
- * Custom hook for Server-Sent Events (SSE) functionality
- */
 export function useSSE(url: string | null, options: SSEOptions = {}) {
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<Event | null>(null);
+  const [connection, setConnection] = useState<EventSource | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
-
-  // Function to connect to SSE
-  const connect = useCallback(() => {
-    // Use useCallback
-    if (!url) return;
-
-    // Close any existing connection
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-    }
-
-    // Create new EventSource
-    const eventSource = new EventSource(url);
-    eventSourceRef.current = eventSource;
-
-    // Event handlers
-    eventSource.onopen = () => {
-      setIsConnected(true);
-      setError(null);
-      options.onOpen?.();
-    };
-
-    eventSource.onerror = (event) => {
-      setError(event);
-      setIsConnected(false);
-      options.onError?.(event);
-      options.onClose?.(); // Call onClose on error as well to cleanup loading state
-      eventSource.close();
-    };
-
-    eventSource.onmessage = (event) => {
-      try {
-        const parsedData = JSON.parse(event.data);
-
-        // Handle different message types
-        if (parsedData.type === "metadata") {
-          options.onMetadata?.(parsedData.data);
-        } else if (parsedData.type === "answer_chunk") {
-          options.onMessage?.(parsedData.text);
-        }
-      } catch (e) {
-        console.error("Error parsing SSE data:", e);
-      }
-    };
-
-    eventSource.close = () => {
-      // Add onclose handler
-      setIsConnected(false);
-      options.onClose?.();
-    };
-  }, [url, options]); // Add url and options to useCallback dependencies
 
   // Function to disconnect from SSE
   const disconnect = useCallback(() => {
-    // Use useCallback
     if (eventSourceRef.current) {
+      console.log("Disconnecting SSE connection");
       eventSourceRef.current.close();
       eventSourceRef.current = null;
+      setConnection(null);
       setIsConnected(false);
       options.onClose?.();
     }
-  }, [options]); // Add options to useCallback dependencies
+  }, [options]);
 
-  // Cleanup on unmount
   useEffect(() => {
-    return () => {
-      disconnect();
-    };
-  }, [disconnect]); // Add disconnect to useEffect dependencies
-
-  // Connect when URL changes
-  useEffect(() => {
-    if (url) {
-      connect();
-    } else {
-      disconnect();
+    // Cleanup previous connection
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
     }
-  }, [url, connect, disconnect]); // Add connect and disconnect to useEffect dependencies
+
+    if (!url) {
+      setIsConnected(false);
+      setConnection(null);
+      return;
+    }
+
+    console.log("Connecting to SSE URL:", url);
+
+    try {
+      // Create EventSource with POST body data
+      const eventSource = new EventSource(url, {
+        withCredentials: true,
+      });
+
+      eventSourceRef.current = eventSource;
+      setConnection(eventSource);
+
+      eventSource.onopen = () => {
+        console.log("SSE connection opened");
+        setIsConnected(true);
+        setError(null);
+        options.onOpen?.();
+      };
+
+      eventSource.onerror = (event) => {
+        console.error("SSE connection error:", event);
+        setError(event);
+        setIsConnected(false);
+
+        options.onError?.(event);
+
+        // Close the connection on error
+        eventSource.close();
+        eventSourceRef.current = null;
+        setConnection(null);
+      };
+
+      eventSource.onmessage = (event) => {
+        try {
+          console.log("SSE raw message:", event.data);
+          const parsedData = JSON.parse(event.data);
+
+          // Handle message based on your backend format
+          if (parsedData.type === "metadata") {
+            console.log("Processing metadata:", parsedData.data);
+            options.onMetadata?.(parsedData.data);
+          } else if (parsedData.type === "answer_chunk") {
+            console.log("Processing text chunk:", parsedData.text);
+            options.onMessage?.(parsedData.text);
+          }
+        } catch (e) {
+          console.error("Error parsing SSE data:", e, "Raw data:", event.data);
+        }
+      };
+    } catch (err) {
+      console.error("Failed to create EventSource:", err);
+      setError(new Event("Failed to connect"));
+      options.onError?.(new Event("Failed to connect"));
+    }
+
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+        setConnection(null);
+      }
+    };
+  }, [url, options]);
 
   return {
     isConnected,
     error,
-    connect,
     disconnect,
+    connection,
   };
 }

@@ -43,15 +43,21 @@ async function apiRequest<T>(
 
 // Chat API
 export const chatApi = {
-  // Get chat SSE endpoint URL
-  getChatStreamURL: (request: ChatRequest): string => {
-    return `/chat/stream?${new URLSearchParams({
-      query: request.query,
-      isSearchMode: String(request.isSearchMode),
-      ...(request.chat_session_id
-        ? { chat_session_id: String(request.chat_session_id) }
-        : {}),
-    }).toString()}`;
+  // Make the POST request to initiate streaming
+  postChatStream: async (request: ChatRequest) => {
+    return await apiRequest<any>({
+      method: "POST",
+      url: "/chat/stream",
+      data: request,
+      // Important: Set responseType to ensure proper SSE handling
+      responseType: "text",
+    });
+  },
+
+  // Return URL string for SSE connection
+  getChatStreamURL: (): string => {
+    // The POST endpoint for chat streaming
+    return `/chat/stream`;
   },
 
   // Get all chat sessions
@@ -61,14 +67,12 @@ export const chatApi = {
       url: "/chat/sessions",
     }),
 
-  // Get a specific chat session with messages
   getSession: (sessionId: number) =>
     apiRequest<ChatSession>({
       method: "GET",
       url: `/chat/sessions/${sessionId}`,
     }),
 
-  // Update chat session (e.g., rename)
   updateSession: (sessionId: number, data: { name: string }) =>
     apiRequest<ChatSession>({
       method: "PUT",
@@ -76,7 +80,6 @@ export const chatApi = {
       data,
     }),
 
-  // Delete a chat session
   deleteSession: (sessionId: number) =>
     apiRequest<{ message: string }>({
       method: "DELETE",

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Message, ChatSession, ChatRequest, MetadataResponse } from "@/types";
 import { useSSE } from "./useSSE";
@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 export function useChat(initialSessionId?: number) {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const sseConnectionRef = useRef<EventSource | null>(null);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
@@ -27,8 +28,13 @@ export function useChat(initialSessionId?: number) {
     isConnected,
     error,
     disconnect: disconnectSSE,
+    connection,
   } = useSSE(sseUrl, {
+    onOpen: () => {
+      console.log("SSE connection opened");
+    },
     onMetadata: (metadata: MetadataResponse) => {
+      console.log("Received metadata:", metadata);
       if (metadata.search) {
         setSearchResults(metadata.search);
       }
@@ -37,9 +43,11 @@ export function useChat(initialSessionId?: number) {
       }
     },
     onMessage: (text: string) => {
+      console.log("Received message chunk:", text);
       setCurrentMessage((prev) => prev + text);
     },
     onClose: () => {
+      console.log("SSE connection closed");
       setIsLoading(false);
       if (currentMessage) {
         // Add the completed assistant message to the list
@@ -54,14 +62,34 @@ export function useChat(initialSessionId?: number) {
         ]);
         setCurrentMessage("");
       }
+      // Critical fix: Clear the SSE URL to prevent reconnection attempts
+      setSSEUrl(null);
     },
     onError: (event) => {
+      console.error("SSE connection error", event);
       setIsLoading(false);
-      toast("SSE Error", {
-        description: "There was an error streaming the response.",
+      // Critical fix: Also clear URL on error
+      setSSEUrl(null);
+      toast("Error", {
+        description: "There was an error connecting to the server.",
       });
     },
   });
+
+  // Store SSE connection in ref for cleanup
+  useEffect(() => {
+    sseConnectionRef.current = connection;
+  }, [connection]);
+
+  // Clean up any active SSE connection on unmount
+  useEffect(() => {
+    return () => {
+      if (sseConnectionRef.current) {
+        sseConnectionRef.current.close();
+        sseConnectionRef.current = null;
+      }
+    };
+  }, []);
 
   // Load sessions if authenticated
   useEffect(() => {
@@ -84,7 +112,7 @@ export function useChat(initialSessionId?: number) {
         description: "Please sign in to continue chatting.",
       });
     }
-  }, [messageCount, isAuthenticated, navigate]);
+  }, [messageCount, isAuthenticated]);
 
   const loadSessions = async () => {
     try {
@@ -115,8 +143,18 @@ export function useChat(initialSessionId?: number) {
   };
 
   const sendMessage = useCallback(
-    (message: string) => {
+    async (message: string) => {
       if (!message.trim() || isLoading) return;
+
+      console.log("Sending message:", message);
+
+      // Close any existing connections
+      if (sseConnectionRef.current) {
+        sseConnectionRef.current.close();
+        sseConnectionRef.current = null;
+      }
+      disconnectSSE();
+      setSSEUrl(null);
 
       // Add user message immediately
       const userMessage: Message = {
@@ -129,8 +167,8 @@ export function useChat(initialSessionId?: number) {
       setMessages((prev) => [...prev, userMessage]);
       setMessageCount((prev) => prev + 1);
       setIsLoading(true);
-      setSearchResults(""); // Clear previous search results
-      setCurrentMessage(""); // Clear current message in case of interruptions
+      setSearchResults("");
+      setCurrentMessage("");
 
       // Prepare chat request
       const chatRequest: ChatRequest = {
@@ -139,31 +177,72 @@ export function useChat(initialSessionId?: number) {
         chat_session_id: currentSessionId,
       };
 
-      // Set SSE URL to trigger connection
-      const url =
-        "http://127.0.0.1:8000" + chatApi.getChatStreamURL(chatRequest);
-      setSSEUrl(url);
+      try {
+        // The critical fix: Use proper URL for SSE connection
+        // Your backend expects a POST request, but EventSource always uses GET
+        // So we'll create a special SSE endpoint wrapper
+
+        const apiBaseUrl =
+          import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+
+        // First POST to initialize the stream
+        await fetch(`${apiBaseUrl}/chat/stream`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("clerk-token")}`,
+          },
+          body: JSON.stringify(chatRequest),
+        });
+
+        // Then immediately connect with SSE to the same endpoint
+        // This works because FastAPI's StreamingResponse will handle both POST setup
+        // and the subsequent SSE connection
+        setSSEUrl(`${apiBaseUrl}/chat/stream`);
+      } catch (error) {
+        console.error("Failed to start chat stream:", error);
+        setIsLoading(false);
+        toast("Error", {
+          description: "Failed to connect to chat service.",
+        });
+      }
     },
-    [currentSessionId, isSearchMode, isLoading]
+    [currentSessionId, isSearchMode, isLoading, disconnectSSE]
   );
 
-  const createNewChat = useCallback(async () => {
-    disconnectSSE(); // Disconnect existing SSE if any
+  const createNewChat = useCallback(() => {
+    // Ensure any active connection is closed
+    if (sseConnectionRef.current) {
+      sseConnectionRef.current.close();
+      sseConnectionRef.current = null;
+    }
+    disconnectSSE();
+    setSSEUrl(null);
+
     setCurrentSessionId(null);
     setMessages([]);
     setSearchResults("");
-    navigate({ to: "/chat" }); // Navigate to base chat URL
+    navigate({ to: "/" });
   }, [disconnectSSE, navigate]);
 
   const switchSession = useCallback(
-    async (sessionId: number) => {
-      disconnectSSE(); // Disconnect existing SSE before switching
+    (sessionId: number) => {
+      if (isLoading) return; // Don't switch while loading
+
+      // Ensure any active connection is closed
+      if (sseConnectionRef.current) {
+        sseConnectionRef.current.close();
+        sseConnectionRef.current = null;
+      }
+      disconnectSSE();
+      setSSEUrl(null);
+
       setCurrentSessionId(sessionId);
-      setMessages([]); // Clear messages before loading new session messages
-      setSearchResults(""); // Clear search results
-      navigate({ to: `/chat/${sessionId}` }); // Navigate to session-specific URL
+      setMessages([]);
+      setSearchResults("");
+      navigate({ to: `/chat/${sessionId}` });
     },
-    [disconnectSSE, navigate]
+    [disconnectSSE, navigate, isLoading]
   );
 
   const renameSession = async (sessionId: number, name: string) => {

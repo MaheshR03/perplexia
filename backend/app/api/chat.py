@@ -27,7 +27,7 @@ async def chat_stream_endpoint(
     return await chat_service.chat_stream_handler(chat_req, request, db, current_user) # Call the handler
 
 
-@router.get("/sessions", response_model=list[dict]) # ADD THIS ENDPOINT
+@router.get("/sessions", response_model=list[dict]) 
 async def list_chat_sessions(db: Session = Depends(get_db), current_user: db_models.User = Depends(auth.get_current_user)):
     """Lists all chat sessions for the current user."""
     sessions = await db.execute(db.select(db_models.ChatSession).filter(db_models.ChatSession.user_id == current_user.id)) # Async DB query
@@ -39,7 +39,7 @@ async def list_chat_sessions(db: Session = Depends(get_db), current_user: db_mod
         "message_count": len(session.messages)
     } for session in sessions]
 
-@router.get("/sessions/{session_id}", response_model=dict) # ADD THIS ENDPOINT
+@router.get("/sessions/{session_id}", response_model=dict) 
 async def get_chat_session(session_id: int, db: Session = Depends(get_db), current_user: db_models.User = Depends(auth.get_current_user)):
     """Gets details of a specific chat session including messages."""
     session_result = await db.execute( # Async DB query
@@ -70,7 +70,7 @@ async def get_chat_session(session_id: int, db: Session = Depends(get_db), curre
         } for msg in messages]
     }
 
-@router.put("/sessions/{session_id}", response_model=dict) # ADD THIS ENDPOINT
+@router.put("/sessions/{session_id}", response_model=dict) 
 async def update_chat_session(
     session_id: int,
     session_data: dict,
@@ -94,7 +94,7 @@ async def update_chat_session(
 
     return {"id": session.id, "name": session.name, "created_at": session.created_at}
 
-@router.delete("/sessions/{session_id}", response_model=dict) # ADD THIS ENDPOINT
+@router.delete("/sessions/{session_id}", response_model=dict)
 async def delete_chat_session(session_id: int, db: Session = Depends(get_db), current_user: db_models.User = Depends(auth.get_current_user)):
     """Deletes a chat session and all its messages."""
     session_result = await db.execute( # Async DB query

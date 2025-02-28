@@ -2,7 +2,7 @@ import React, { createContext, useState, useEffect } from "react";
 import { User } from "@/types";
 import { authApi } from "@/lib/api";
 import { toast } from "sonner";
-import { useClerk, useUser } from "@clerk/clerk-react";
+import { useClerk, useUser, useAuth as useClerkAuth } from "@clerk/clerk-react";
 
 interface AuthContextType {
   user: User | null;
@@ -25,6 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const { isSignedIn, isLoaded: clerkLoaded } = useUser();
   const { openSignIn, signOut: clerkSignOut } = useClerk();
+  const { getToken } = useClerkAuth();
 
   // Fetch user data if authenticated
   useEffect(() => {
@@ -32,16 +33,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (isSignedIn) {
         try {
           setIsLoading(true);
-          const { data, error } = await authApi.getCurrentUser();
 
-          if (error) throw new Error(error);
+          // Get JWT token from Clerk
+          const token = await getToken();
+          console.log(token);
+          // Pass token to your API client (convert null to undefined)
+          const { data, error } = await authApi.getCurrentUser(
+            token || undefined
+          );
+
+          if (error) {
+            console.error("Error fetching user data:", error);
+            toast("Failed to load user data", {
+              description: error,
+            });
+            throw new Error(error);
+          }
 
           setUser(data);
         } catch (error) {
           console.error("Failed to fetch user data:", error);
-          toast.error("Failed to load user data.", {
-            description: "Please try again later.",
-          });
+          setUser(null);
         } finally {
           setIsLoading(false);
         }
@@ -54,7 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (clerkLoaded) {
       fetchUserData();
     }
-  }, [isSignedIn, clerkLoaded]);
+  }, [isSignedIn, clerkLoaded, getToken]);
 
   const signIn = () => {
     openSignIn();

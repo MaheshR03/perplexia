@@ -1,5 +1,6 @@
+import { Monitoring } from "react-scan/monitoring";
 import {
-  RootRoute,
+  createRootRoute,
   Route,
   Router,
   RouterProvider,
@@ -9,86 +10,38 @@ import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ChatProvider } from "@/contexts/ChatContext";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Chat } from "@/pages/Chat";
-import { Landing } from "@/pages/Landing";
-import { Login } from "@/pages/Login";
-import { AuthCallback } from "@/pages/AuthCallback";
-import { PDFManager } from "@/pages/PDFManager";
 import { ClerkProvider } from "@clerk/clerk-react";
+import { generateRoutes } from "@/utils/routeGenerator";
 
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
-// Define routes
-const rootRoute = new RootRoute({
+// Define root route with providers
+const rootRoute = createRootRoute({
   component: () => (
-    <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
-      <AuthProvider>
-        <ChatProvider>
-          <Outlet />
-          <Toaster position="top-right" />
-        </ChatProvider>
-      </AuthProvider>
-    </ClerkProvider>
+    <>
+      <Monitoring
+        apiKey="fJgyqNoQEEuMMLMkyT9FnoMZ0g8BO5Vr"
+        url="https://monitoring.react-scan.com/api/v1/ingest"
+      />
+      <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
+        <AuthProvider>
+          <ChatProvider>
+            <Outlet />
+            <Toaster position="top-right" />
+          </ChatProvider>
+        </AuthProvider>
+      </ClerkProvider>
+    </>
   ),
 });
 
-// Public routes
-const landingRoute = new Route({
-  getParentRoute: () => rootRoute,
-  path: "/",
-  component: Landing,
-});
-
-const loginRoute = new Route({
-  getParentRoute: () => rootRoute,
-  path: "/login",
-  component: Login,
-});
-
-const authCallbackRoute = new Route({
-  getParentRoute: () => rootRoute,
-  path: "/auth-callback",
-  component: AuthCallback,
-});
-
-// Protected routes with layout
-const layoutRoute = new Route({
-  getParentRoute: () => rootRoute,
-  id: "layout",
-  component: () => (
-    <AppLayout>
-      <Outlet />
-    </AppLayout>
-  ),
-});
-
-const chatRoute = new Route({
-  getParentRoute: () => layoutRoute,
-  path: "/chat",
-  component: Chat,
-});
-
-const chatSessionRoute = new Route({
-  getParentRoute: () => layoutRoute,
-  path: "/chat/$sessionId",
-  component: Chat,
-});
-
-const pdfManagerRoute = new Route({
-  getParentRoute: () => layoutRoute,
-  path: "/pdfs",
-  component: PDFManager,
-});
+// Generate routes from pages folder
+const { routes, layoutRoute } = generateRoutes(rootRoute);
 
 // Create router instance
-const routeTree = rootRoute.addChildren([
-  landingRoute,
-  loginRoute,
-  authCallbackRoute,
-  layoutRoute.addChildren([chatRoute, chatSessionRoute, pdfManagerRoute]),
-]);
+const routeTree = rootRoute.addChildren(routes);
 
-const router = new Router({ routeTree }); // Corrected variable name
+const router = new Router({ routeTree });
 
 function App() {
   return <RouterProvider router={router} />;

@@ -133,11 +133,37 @@ export const pdfApi = {
 // Auth API
 export const authApi = {
   // Get current user
-  getCurrentUser: () =>
-    apiRequest<User>({
-      method: "GET",
-      url: "/auth/me",
-    }),
+  getCurrentUser: async (token?: string) => {
+    try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+
+      // Add Authorization header if token is provided
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const response = await fetch("127:0:0:1/8000/auth/me", {
+        method: "GET",
+        headers,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        return {
+          data: null,
+          error: errorData.message || "Failed to fetch user data",
+        };
+      }
+
+      const data = await response.json();
+      return { data, error: null };
+    } catch (error) {
+      const err = error as Error;
+      return { data: null, error: err.message || "An error occurred" };
+    }
+  },
 };
 
 export default api;

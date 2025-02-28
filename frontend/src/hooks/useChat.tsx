@@ -140,7 +140,8 @@ export function useChat(initialSessionId?: number) {
       };
 
       // Set SSE URL to trigger connection
-      const url = "/api" + chatApi.getChatStreamURL(chatRequest);
+      const url =
+        "http://127.0.0.1:8000" + chatApi.getChatStreamURL(chatRequest);
       setSSEUrl(url);
     },
     [currentSessionId, isSearchMode, isLoading]

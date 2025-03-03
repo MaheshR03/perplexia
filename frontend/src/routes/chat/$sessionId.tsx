@@ -4,6 +4,7 @@ import { Layout } from "../../components/Layout";
 import { ChatWindow } from "../../components/chat/ChatWindow";
 import { useChat } from "../../hooks/useChat";
 import { useAuth } from "../../hooks/useAuth";
+import { useEffect } from "react";
 
 export const Route = createFileRoute("/chat/$sessionId")({
   component: ChatSessionPage,
@@ -25,10 +26,15 @@ function ChatSessionPage() {
   const { sessionId } = Route.useParams();
   const sessionIdNum = parseInt(sessionId);
 
-  const { messages, sendMessage, isLoading, currentSession } =
-    useChat(sessionIdNum);
+  const { messages, sendMessage, isLoading, currentSession, switchSession } =
+    useChat();
 
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+
+  // When the route parameter changes, update the current session
+  useEffect(() => {
+    switchSession(sessionIdNum);
+  }, [sessionIdNum, switchSession]);
 
   // If still checking auth, show loading
   if (authLoading) {

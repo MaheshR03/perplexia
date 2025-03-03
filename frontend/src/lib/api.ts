@@ -24,17 +24,12 @@ export const chatApi = {
   // Chat sessions
   getChatSessions: () => api.get("/chat/sessions"),
   getChatSession: (sessionId: number) => api.get(`/chat/sessions/${sessionId}`),
+  createChatSession: (data: { name: string }) =>
+    api.post("/chat/sessions", data),
   updateChatSession: (sessionId: number, data: { name: string }) =>
     api.put(`/chat/sessions/${sessionId}`, data),
   deleteChatSession: (sessionId: number) =>
     api.delete(`/chat/sessions/${sessionId}`),
-
-  // Chat streaming
-  sendMessage: (chatRequest: {
-    message: string;
-    session_id?: number;
-    context_pdfs?: number[];
-  }) => api.post("/chat/stream", chatRequest, { responseType: "stream" }),
 };
 
 export const pdfApi = {

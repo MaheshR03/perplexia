@@ -8,17 +8,18 @@ import logging
 logging.basicConfig(level=logging.INFO) 
 logger = logging.getLogger(__name__) 
 
-@asynccontextmanager
 async def lifespan(app: FastAPI):
-    #Create Supabase tables (common tables)
+    # Create Supabase tables (common tables) if they don't exist
     async with engine.begin() as conn:
+        # FIX: Pass the function directly without lambda
         await conn.run_sync(Base.metadata.create_all)
-    logger.info("Supabase tables created")
+    logger.info("Supabase tables verified/created")
 
-    # Create NeonDB tables (vector‑specific models)
+    # Create NeonDB tables (vector‑specific models) if they don't exist
     async with neon_engine.begin() as neon_conn:
+        # FIX: Pass the function directly without lambda
         await neon_conn.run_sync(NeonBase.metadata.create_all)
-    logger.info("Neon tables created")
+    logger.info("Neon tables verified/created")
     
     yield  # This is where the app runs
     

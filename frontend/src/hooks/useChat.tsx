@@ -1,22 +1,36 @@
-// src/hooks/useChat.tsx
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { chatApi } from "../lib/api";
 import { ChatMessage, ChatSession } from "../types";
 import { useAuth } from "./useAuth";
 
-export function useChat(sessionId?: number) {
+export function useChat(initialSessionId?: number) {
+  const [sessionId, setSessionId] = useState<number | undefined>(
+    initialSessionId
+  );
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
-  const [currentSession, setCurrentSession] = useState<ChatSession | null>(
-    null
-  );
   const [isLoading, setIsLoading] = useState(false);
   const [messageCount, setMessageCount] = useState(0);
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const reader = useRef<ReadableStreamDefaultReader | null>(null);
   const abortController = useRef<AbortController | null>(null);
+
+  // Derive current session from sessions array and sessionId
+  const currentSession = useMemo(() => {
+    return sessionId
+      ? sessions.find((session) => session.id === sessionId) || null
+      : null;
+  }, [sessions, sessionId]);
+
+  // Function to change the active session
+  const switchSession = useCallback((id?: number) => {
+    setSessionId(id);
+    if (!id) {
+      // Reset state for new chat
+      setMessages([]);
+    }
+  }, []);
 
   // Function to fetch chat sessions
   const fetchSessions = useCallback(async () => {
@@ -30,7 +44,7 @@ export function useChat(sessionId?: number) {
     }
   }, [isAuthenticated]);
 
-  // Function to fetch a specific chat session
+  // Function to fetch a specific chat session's messages
   const fetchSession = useCallback(
     async (id: number) => {
       if (!isAuthenticated) return;
@@ -38,8 +52,25 @@ export function useChat(sessionId?: number) {
       try {
         setIsLoading(true);
         const { data } = await chatApi.getChatSession(id);
-        setCurrentSession(data);
         setMessages(data.messages || []);
+
+        // Update the session in our sessions list if needed
+        setSessions((prev) => {
+          const sessionIndex = prev.findIndex((s) => s.id === id);
+          if (sessionIndex === -1) {
+            // Add session if not in list
+            return [
+              ...prev,
+              {
+                id: data.id,
+                name: data.name,
+                created_at: data.created_at,
+                message_count: data.messages?.length || 0,
+              },
+            ];
+          }
+          return prev;
+        });
       } catch (error) {
         console.error(`Failed to fetch chat session ${id}:`, error);
       } finally {
@@ -55,7 +86,6 @@ export function useChat(sessionId?: number) {
       fetchSession(sessionId);
     } else {
       setMessages([]);
-      setCurrentSession(null);
     }
   }, [sessionId, fetchSession]);
 
@@ -67,7 +97,6 @@ export function useChat(sessionId?: number) {
   }, [isAuthenticated, fetchSessions]);
 
   // Send a message and process streaming response
-  // Updated sendMessage using fetch for streaming response
   const sendMessage = useCallback(
     async (message: string, contextPdfs: number[] = []) => {
       try {
@@ -106,7 +135,7 @@ export function useChat(sessionId?: number) {
           return;
         }
 
-        // Use fetch to send the POST request with streaming enabled
+        // Use fetch to send request with streaming
         const response = await fetch(
           `${
             import.meta.env.VITE_API_URL || "http://localhost:8000"
@@ -118,7 +147,8 @@ export function useChat(sessionId?: number) {
               Authorization: `Bearer ${localStorage.getItem("clerk-token")}`,
             },
             body: JSON.stringify({
-              message,
+              query: message,
+              isSearchMode: false,
               session_id: sessionId,
               context_pdfs: contextPdfs.length > 0 ? contextPdfs : undefined,
             }),
@@ -128,28 +158,58 @@ export function useChat(sessionId?: number) {
 
         // Process the streaming response
         const reader = response.body?.getReader();
-        let accumulatedContent = "";
+        let buffer = "";
+
         if (reader) {
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-            const text = new TextDecoder().decode(value);
-            accumulatedContent += text;
-            // Update the assistant message with the accumulated content
-            setMessages((prev) =>
-              prev.map((msg) =>
-                msg.id === assistantMessage.id
-                  ? { ...msg, content: accumulatedContent }
-                  : msg
-              )
-            );
+
+            // Decode chunk and add to buffer
+            const chunk = new TextDecoder().decode(value);
+            buffer += chunk;
+
+            // Process complete SSE messages
+            const lines = buffer.split("\n\n");
+            buffer = lines.pop() || "";
+
+            for (const line of lines) {
+              if (!line.trim() || !line.startsWith("data: ")) continue;
+
+              try {
+                const data = JSON.parse(line.substring(6)); // Remove "data: " prefix
+
+                if (data.type === "metadata") {
+                  const newSessionId = data.data.chat_session_id;
+                  if (!sessionId && newSessionId) {
+                    // Update our internal state
+                    setSessionId(newSessionId);
+                    // Navigate to the new session
+                    navigate({ to: `/chat/${newSessionId}` });
+                  }
+                } else if (data.type === "content") {
+                  // Update assistant message with new content
+                  setMessages((prev) =>
+                    prev.map((msg) =>
+                      msg.id === assistantMessage.id
+                        ? { ...msg, content: msg.content + data.text }
+                        : msg
+                    )
+                  );
+                } else if (data.type === "end") {
+                  // Message streaming completed
+                  fetchSessions();
+                }
+              } catch (error) {
+                console.error("Error parsing SSE message:", error);
+              }
+            }
           }
         }
-
-        // Refresh sessions list to show updated message count or new session
-        fetchSessions();
-      } catch (error) {
-        console.error("Error sending message:", error);
+      } catch (error: unknown) {
+        if (error instanceof Error && error.name !== "AbortError") {
+          console.error("Error sending message:", error);
+        }
       } finally {
         setIsLoading(false);
         abortController.current = null;
@@ -157,17 +217,18 @@ export function useChat(sessionId?: number) {
     },
     [isAuthenticated, messageCount, sessionId, navigate, fetchSessions]
   );
+
   // Create a new chat session
   const createSession = useCallback(
     async (name: string = "New Chat") => {
       if (!isAuthenticated) return null;
 
       try {
-        // The first message will automatically create a session
-        // We'll get the session ID from the response
-        // For now, navigate to the main chat page
+        // Reset session ID
+        setSessionId(undefined);
+        // Navigate to chat - sending the first message will create a session
         navigate({ to: "/chat" });
-        return null;
+        return { id: null, name };
       } catch (error) {
         console.error("Failed to create chat session:", error);
         return null;
@@ -185,14 +246,15 @@ export function useChat(sessionId?: number) {
         await chatApi.deleteChatSession(id);
         setSessions((prev) => prev.filter((session) => session.id !== id));
 
-        if (currentSession?.id === id) {
+        if (sessionId === id) {
+          setSessionId(undefined);
           navigate({ to: "/chat" });
         }
       } catch (error) {
         console.error(`Failed to delete chat session ${id}:`, error);
       }
     },
-    [isAuthenticated, currentSession, navigate]
+    [isAuthenticated, sessionId, navigate]
   );
 
   // Rename a chat session
@@ -207,16 +269,21 @@ export function useChat(sessionId?: number) {
             session.id === id ? { ...session, name } : session
           )
         );
-
-        if (currentSession?.id === id) {
-          setCurrentSession((prev) => (prev ? { ...prev, name } : null));
-        }
       } catch (error) {
         console.error(`Failed to rename chat session ${id}:`, error);
       }
     },
-    [isAuthenticated, currentSession]
+    [isAuthenticated]
   );
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      if (abortController.current) {
+        abortController.current.abort();
+      }
+    };
+  }, []);
 
   return {
     messages,
@@ -224,6 +291,8 @@ export function useChat(sessionId?: number) {
     currentSession,
     isLoading,
     messageCount,
+    sessionId,
+    switchSession,
     sendMessage,
     createSession,
     deleteSession,

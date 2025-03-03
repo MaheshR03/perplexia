@@ -21,12 +21,7 @@ def generate_response_with_gemini_streaming(prompt: str):
             "max_output_tokens": 1024,
             "response_mime_type": "text/plain"
         },
-        safety_settings=[
-            {"category": "harm_category_hate_speech", "threshold": "block_none"},
-            {"category": "harm_category_sexual", "threshold": "block_none"},
-            {"category": "harm_category_dangerous", "threshold": "block_none"},
-        ]
-    ).stream
+    )
 
     async def text_streamer():
         for chunk in response_stream:

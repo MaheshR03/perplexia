@@ -17,8 +17,14 @@ export function Layout({
 }: LayoutProps) {
   const navigate = useNavigate();
 
-  const { sessions, createSession, deleteSession, renameSession } =
-    useChat(sessionId);
+  const {
+    sessions,
+    createSession,
+    deleteSession,
+    renameSession,
+    sessionId: activeSessionId,
+    switchSession,
+  } = useChat(sessionId);
 
   const handleCreateSession = async () => {
     const session = await createSession();
@@ -35,7 +41,7 @@ export function Layout({
           onCreateSession={handleCreateSession}
           onDeleteSession={deleteSession}
           onRenameSession={renameSession}
-          currentSessionId={sessionId}
+          currentSessionId={activeSessionId}
         />
       )}
       <main className="flex-1 overflow-hidden">{children}</main>

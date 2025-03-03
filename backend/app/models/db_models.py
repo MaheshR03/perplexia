@@ -26,7 +26,7 @@ class ChatSession(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="chat_sessions")
-    messages = relationship("ChatMessage", back_populates="chat_session")
+    messages = relationship("ChatMessage", back_populates="chat_session", lazy="selectin")
     pdf_documents_assoc = relationship("ChatSessionPDF", back_populates="chat_session")
     pdf_documents = relationship("PDFDocument", secondary="chat_session_pdfs", backref="chat_sessions")
 
@@ -40,7 +40,7 @@ class ChatMessage(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     is_user_message = Column(Boolean, default=True) # Flag if message is from user or bot
 
-    chat_session = relationship("ChatSession", back_populates="messages")
+    chat_session = relationship("ChatSession", back_populates="messages", lazy="selectin")
     user = relationship("User") # Optional user relationship
 
 class PDFDocument(Base):

@@ -1,13 +1,51 @@
-// src/components/Sidebar.tsx
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { MessageSquare, Plus, Menu, Trash2, Edit2, LogOut } from "lucide-react";
+import {
+  MessageSquare,
+  Plus,
+  Menu,
+  Trash2,
+  Edit2,
+  LogOut,
+  Sun,
+  Moon,
+} from "lucide-react";
 import { ChatSession } from "../types";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { useAuth } from "../hooks/useAuth";
 import { useClerk } from "@clerk/clerk-react";
+
+// Theme toggle component
+function ThemeToggle() {
+  const [isDark, setIsDark] = useState(() =>
+    document.documentElement.classList.contains("dark")
+  );
+
+  const toggleTheme = () => {
+    const newMode = !isDark;
+    setIsDark(newMode);
+    if (newMode) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  };
+
+  return (
+    <Button
+      variant="outline"
+      size="icon"
+      onClick={toggleTheme}
+      className="h-8 w-8"
+    >
+      {isDark ? <Sun size={16} /> : <Moon size={16} />}
+    </Button>
+  );
+}
 
 interface SidebarProps {
   sessions: ChatSession[];
@@ -60,6 +98,7 @@ export function Sidebar({
                 onCreateSession={onCreateSession}
                 onDeleteSession={onDeleteSession}
                 editingSession={editingSession}
+                setEditingSession={setEditingSession}
                 newName={newName}
                 setNewName={setNewName}
                 startEditing={startEditing}
@@ -81,6 +120,7 @@ export function Sidebar({
           onCreateSession={onCreateSession}
           onDeleteSession={onDeleteSession}
           editingSession={editingSession}
+          setEditingSession={setEditingSession}
           newName={newName}
           setNewName={setNewName}
           startEditing={startEditing}
@@ -99,6 +139,7 @@ interface SidebarContentProps {
   onCreateSession: () => void;
   onDeleteSession: (id: number) => void;
   editingSession: number | null;
+  setEditingSession: (id: number | null) => void;
   newName: string;
   setNewName: (name: string) => void;
   startEditing: (session: ChatSession) => void;
@@ -114,35 +155,40 @@ function SidebarContent({
   onCreateSession,
   onDeleteSession,
   editingSession,
+  setEditingSession,
   newName,
   setNewName,
   startEditing,
+  handleRename,
   currentSessionId,
   setIsOpen,
   isAuthenticated,
   signOut,
 }: SidebarContentProps) {
   return (
-    <div className="flex h-full flex-col overflow-y-auto bg-muted/10 p-3">
+    <div className="flex h-full flex-col overflow-y-auto bg-background text-foreground p-3">
       <div className="mb-4 flex items-center justify-between px-2">
         <h2 className="text-lg font-semibold">Your Chats</h2>
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => {
-            onCreateSession();
-            if (setIsOpen) setIsOpen(false);
-          }}
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
+        <div className="flex gap-2">
+          <ThemeToggle />
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => {
+              onCreateSession();
+              if (setIsOpen) setIsOpen(false);
+            }}
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-1">
         {isAuthenticated ? (
           sessions.length > 0 ? (
             sessions.map((session) => (
-              <div key={session.id} className="relative">
+              <div key={session.id} className="relative group">
                 {editingSession === session.id ? (
                   <div className="flex items-center space-x-1 p-1">
                     <Input
@@ -157,7 +203,7 @@ function SidebarContent({
                     />
                     <Button
                       size="sm"
-                      variant="ghost"
+                      variant="secondary"
                       onClick={() => handleRename(session.id)}
                     >
                       Save
@@ -170,7 +216,7 @@ function SidebarContent({
                     className={`flex items-center space-x-2 rounded-md px-3 py-2 text-sm
                       ${
                         currentSessionId === session.id
-                          ? "bg-accent"
+                          ? "bg-accent text-accent-foreground"
                           : "hover:bg-accent/50"
                       }`}
                     onClick={() => {
@@ -179,11 +225,11 @@ function SidebarContent({
                   >
                     <MessageSquare className="h-4 w-4" />
                     <span className="flex-1 truncate">{session.name}</span>
-                    <div className="flex space-x-1">
+                    <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                        className="h-6 w-6"
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -195,7 +241,7 @@ function SidebarContent({
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                        className="h-6 w-6 hover:bg-destructive hover:text-destructive-foreground"
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();

@@ -22,12 +22,9 @@ function HomePage() {
   };
 
   return (
-    <Layout showSidebar={false}>
-      <div className="flex h-screen flex-col">
-        <header className="border-b bg-background p-4">
-          <h1 className="text-xl font-semibold">Chat with AI</h1>
-        </header>
-
+    <Layout>
+      <div className="flex h-screen flex-col w-[50vw]">
+        <h1 className="text-xl font-semibold">Perplexia</h1>
         <div className="flex-1 overflow-hidden">
           <ChatWindow
             messages={messages}

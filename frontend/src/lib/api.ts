@@ -36,19 +36,38 @@ export const pdfApi = {
   uploadPdf: (file: File) => {
     const formData = new FormData();
     formData.append("file", file);
+
     return api.post("/pdf/upload", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
+      timeout: 30000, // 30 seconds for large files
     });
   },
-  listPdfs: () => api.get("/pdf/list"),
+
+  listPdfs: () =>
+    api.get("/pdf/list").then((response) => {
+      // Ensure we always return an array
+      return {
+        ...response,
+        data: Array.isArray(response.data) ? response.data : [],
+      };
+    }),
+
   addPdfToSession: (sessionId: number, pdfId: number) =>
     api.post(`/pdf/sessions/${sessionId}/add_pdf/${pdfId}`),
+
   removePdfFromSession: (sessionId: number, pdfId: number) =>
     api.delete(`/pdf/sessions/${sessionId}/remove_pdf/${pdfId}`),
+
   listSessionPdfs: (sessionId: number) =>
-    api.get(`/pdf/sessions/${sessionId}/pdfs`),
+    api.get(`/pdf/sessions/${sessionId}/pdfs`).then((response) => {
+      // Ensure we always return an array
+      return {
+        ...response,
+        data: Array.isArray(response.data) ? response.data : [],
+      };
+    }),
 };
 
 export const userApi = {

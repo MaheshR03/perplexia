@@ -50,6 +50,8 @@ class PDFDocument(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     filename = Column(String)
     upload_date = Column(DateTime(timezone=True), server_default=func.now())
+    file_size = Column(Integer)      
+    page_count = Column(Integer)     
 
     user = relationship("User", back_populates="pdf_documents")
     pdf_chunks = relationship("PDFChunk", back_populates="pdf_document")

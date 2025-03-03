@@ -68,7 +68,7 @@ async def chat_stream_handler(chat_req: ChatRequest, request: Request, db: Sessi
     {chat_history_str}
 
     **User Question:** {query}"""
-
+    print(prompt)
     async def sse_generator():
         # Send metadata with session ID first
         metadata = {"search": tavily_context, "duration": time.time() - start_time, "chat_session_id": chat_session_id}

@@ -37,7 +37,7 @@ app.add_middleware(
 )
 
 app.include_router(chat.router, prefix="/chat", tags=["Chat"])
-app.include_router(pdfs.router, prefix="/pdfs", tags=["PDFs"])
+app.include_router(pdfs.router, prefix="/pdf", tags=["Pdf"])
 app.include_router(auth.router, prefix="/auth", tags=["Auth"]) 
 
 @app.get("/health")

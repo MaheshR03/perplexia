@@ -5,12 +5,12 @@ import { Input } from "./ui/input";
 import {
   MessageSquare,
   Plus,
-  Menu,
   Trash2,
   Edit2,
   LogOut,
   Sun,
   Moon,
+  PanelLeft,
 } from "lucide-react";
 import { ChatSession } from "../types";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
@@ -88,7 +88,7 @@ export function Sidebar({
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
             <Button variant="ghost" size="icon" className="lg:hidden">
-              <Menu className="h-5 w-5" />
+              <PanelLeft className="h-5 w-5" />
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="w-64 p-0">
@@ -166,7 +166,7 @@ function SidebarContent({
   signOut,
 }: SidebarContentProps) {
   return (
-    <div className="flex h-full flex-col overflow-y-auto bg-background text-foreground p-3">
+    <div className="flex h-full flex-col overflow-y-auto bg-background text-foreground p-3 bg-white">
       <div className="mb-4 flex items-center justify-between px-2">
         <h2 className="text-lg font-semibold">Your Chats</h2>
         <div className="flex gap-2">

@@ -188,11 +188,12 @@ export function PDFUploader({ sessionId }: PDFUploaderProps) {
   return (
     <>
       <Button
-        variant="outline"
         size="icon"
         type="button"
         onClick={handleOpenDialog}
         title="Manage PDFs"
+        variant="outline"
+        style={{ borderRadius: "50%" }}
       >
         <FileUp className="h-4 w-4" />
       </Button>
@@ -206,7 +207,7 @@ export function PDFUploader({ sessionId }: PDFUploaderProps) {
       />
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md bg-white">
           <DialogHeader>
             <DialogTitle>Manage PDFs</DialogTitle>
           </DialogHeader>

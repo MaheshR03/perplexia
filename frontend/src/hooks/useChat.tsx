@@ -58,7 +58,6 @@ export function useChat(initialSessionId?: number) {
         setSessions((prev) => {
           const sessionIndex = prev.findIndex((s) => s.id === id);
           if (sessionIndex === -1) {
-            // Add session if not in list
             return [
               ...prev,
               {
@@ -71,13 +70,29 @@ export function useChat(initialSessionId?: number) {
           }
           return prev;
         });
-      } catch (error) {
+      } catch (error: any) {
         console.error(`Failed to fetch chat session ${id}:`, error);
+
+        // Handle different error types
+        if (error?.response?.status === 404) {
+          // Session not found, redirect to the chat homepage
+          navigate({ to: "/chat" });
+        } else if (error?.response?.status === 401) {
+          // Authentication error, refresh token and retry once
+          try {
+            // Try the request again
+            const { data } = await chatApi.getChatSession(id);
+            setMessages(data.messages || []);
+          } catch (refreshError) {
+            // If refresh fails too, navigate to login
+            navigate({ to: "/login" });
+          }
+        }
       } finally {
         setIsLoading(false);
       }
     },
-    [isAuthenticated]
+    [isAuthenticated, navigate]
   );
 
   // Load session data when sessionId changes

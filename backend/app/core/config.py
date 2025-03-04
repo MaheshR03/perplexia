@@ -25,6 +25,8 @@ class Settings:
     CLERK_ISSUER: str = os.getenv("CLERK_ISSUER")
     CLERK_JWT_AUDIENCE: str = os.getenv("CLERK_JWT_AUDIENCE", "http://localhost:5173") 
     CLERK_SECRET_KEY = os.environ.get("CLERK_SECRET_KEY")
+    CLERK_JWKS_ENDPOINT = os.environ.get("CLERK_JWKS_ENDPOINT")
+    
     TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY")
 
 

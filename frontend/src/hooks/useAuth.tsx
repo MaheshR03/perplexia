@@ -1,7 +1,7 @@
 // src/hooks/useAuth.tsx
 import { useEffect, useState } from "react";
 import { useClerk, useUser } from "@clerk/clerk-react";
-import { userApi } from "../lib/api";
+import { userApi, setClerkSessionRef } from "../lib/api";
 import { User } from "../types";
 
 export function useAuth() {
@@ -10,8 +10,15 @@ export function useAuth() {
   const [appUser, setAppUser] = useState<User | null>(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [authToken, setAuthToken] = useState<string | null>(() => {
-    return localStorage.getItem("auth-token");
+    return localStorage.getItem("clerk-token");
   });
+
+  // Set the clerk session reference for API interceptors to use
+  useEffect(() => {
+    if (session) {
+      setClerkSessionRef(session);
+    }
+  }, [session]);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -40,6 +47,36 @@ export function useAuth() {
     };
 
     fetchUser();
+  }, [isLoaded, isSignedIn, session]);
+
+  // Function to refresh token
+  const refreshToken = async () => {
+    if (isLoaded && isSignedIn && session) {
+      try {
+        const token = await session.getToken();
+        if (token) {
+          localStorage.setItem("clerk-token", token);
+          setAuthToken(token);
+          return token;
+        }
+      } catch (error) {
+        console.error("Failed to refresh token:", error);
+      }
+    }
+    return null;
+  };
+
+  // Set up periodic token refresh (every minute)
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn) return;
+
+    // Initial token refresh
+    refreshToken();
+
+    // Refresh token periodically
+    const intervalId = setInterval(refreshToken, 1 * 60 * 1000); // 1 minute
+
+    return () => clearInterval(intervalId);
   }, [isLoaded, isSignedIn, session]);
 
   return {

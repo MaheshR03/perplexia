@@ -15,7 +15,7 @@ router = APIRouter()
 
 # Set up Clerk URLs based on your settings
 CLERK_ISSUER = settings.CLERK_ISSUER
-CLERK_JWKS_URL = f"{settings.CLERK_ISSUER}/.well-known/jwks.json"
+CLERK_JWKS_URL = settings.CLERK_JWKS_ENDPOINT
 
 def get_jwks():
     """Fetch the JSON Web Key Set from Clerk"""

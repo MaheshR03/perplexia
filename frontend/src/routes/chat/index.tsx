@@ -12,7 +12,7 @@ export const Route = createFileRoute("/chat/")({
     const token = localStorage.getItem("clerk-token");
     console.log(token);
     if (!token) {
-      throw redirect({ to: "/login" });
+      throw redirect({ to: "/" });
     }
   },
 });

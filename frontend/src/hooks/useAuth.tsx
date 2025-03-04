@@ -9,6 +9,9 @@ export function useAuth() {
   const { session } = useClerk();
   const [appUser, setAppUser] = useState<User | null>(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
+  const [authToken, setAuthToken] = useState<string | null>(() => {
+    return localStorage.getItem("auth-token");
+  });
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -18,6 +21,7 @@ export function useAuth() {
           const token = await session?.getToken();
           if (token) {
             localStorage.setItem("clerk-token", token);
+            setAuthToken(token);
           }
 
           // Get the user from our backend
@@ -43,5 +47,6 @@ export function useAuth() {
     user: appUser,
     clerkUser: user,
     isLoading: !isLoaded || isLoadingUser,
+    authToken,
   };
 }

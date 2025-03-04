@@ -6,7 +6,6 @@ class ChatRequest(BaseModel):
     query: str
     isSearchMode: bool
     session_id: Optional[int] = None  # Changed from chat_session_id
-    context_pdfs: Optional[List[int]] = None  # Added for PDF context
 
 class ChatResponse(BaseModel): # Adjust if needed, SSE streaming changes this
     answer: str

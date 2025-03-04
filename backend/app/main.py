@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+
+from sqlalchemy import text
 from app.api import chat, pdfs, auth  # Import API routers
 from app.core.database import engine, Base, neon_engine, NeonBase 
 import logging 
@@ -17,8 +19,24 @@ async def lifespan(app: FastAPI):
 
     # Create NeonDB tables (vector‑specific models) if they don't exist
     async with neon_engine.begin() as neon_conn:
-        # FIX: Pass the function directly without lambda
-        await neon_conn.run_sync(NeonBase.metadata.create_all)
+        try:
+            # Install pgvector
+            await neon_conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+            logger.info("pgvector extension created or already exists")
+            
+            # Create helper function for vector conversion
+            await neon_conn.execute(text("""
+                CREATE OR REPLACE FUNCTION array_to_vector(float[]) RETURNS vector
+                AS $$ SELECT $1::vector $$ LANGUAGE SQL IMMUTABLE STRICT;
+            """))
+            logger.info("Vector conversion function created")
+            
+            # Create tables with proper vector support
+            await neon_conn.run_sync(NeonBase.metadata.create_all)
+            logger.info("Neon tables verified/created")
+            
+        except Exception as e:
+            logger.error(f"Error setting up Neon database: {str(e)}")
     logger.info("Neon tables verified/created")
     
     yield  # This is where the app runs

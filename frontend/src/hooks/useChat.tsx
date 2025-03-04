@@ -98,7 +98,7 @@ export function useChat(initialSessionId?: number) {
 
   // Send a message and process streaming response
   const sendMessage = useCallback(
-    async (message: string, contextPdfs: number[] = []) => {
+    async (message: string) => {
       try {
         setIsLoading(true);
 
@@ -150,7 +150,6 @@ export function useChat(initialSessionId?: number) {
               query: message,
               isSearchMode: false,
               session_id: sessionId,
-              context_pdfs: contextPdfs.length > 0 ? contextPdfs : undefined,
             }),
             signal: abortController.current.signal,
           }

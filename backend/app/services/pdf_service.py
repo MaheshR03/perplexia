@@ -8,9 +8,9 @@ from sqlalchemy.orm import Session
 import json
 import logging
 from sqlalchemy import select
+from app.core.database import NeonAsyncSessionLocal
 
 from app.services import embedding_service
-from app.services import neon_service
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +37,7 @@ async def process_pdf_and_store(file: UploadFile, user_id: int, db: Session):
             try:
                 text = page.extract_text() or ""
                 text_parts.append(text)
+                logger.info(f"Extracted {len(text)} characters from page")
             except Exception as e:
                 logger.warning(f"Error extracting text from page: {str(e)}")
                 
@@ -56,143 +57,93 @@ async def process_pdf_and_store(file: UploadFile, user_id: int, db: Session):
         db.add(pdf_document_db)
         await db.commit()
         await db.refresh(pdf_document_db)
+
+        pdf_id = pdf_document_db.id  # Save ID before any potential rollback
         
-        # Process text into chunks and generate embeddings
-        chunks = chunk_text_into_segments(sanitized_text)
-        chunk_ids = []
-        
-        for index, chunk_text in enumerate(chunks):
+        # No chunking - just use the whole document text
+        # Create a NeonDB session
+        neon_db = NeonAsyncSessionLocal()
+        try:
+            # Check if document_chunks table exists in NEON
+            from sqlalchemy import text
+            check_result = await neon_db.execute(text(
+                "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'document_chunks')"
+            ))
+            chunks_table_exists = check_result.scalar()
+            
+            if not chunks_table_exists:
+                logger.error("document_chunks table does not exist in NeonDB")
+                return {
+                    "id": pdf_id,
+                    "filename": file.filename,
+                    "upload_date": pdf_document_db.upload_date,
+                    "page_count": len(reader.pages),
+                    "message": "PDF metadata saved, but vector could not be stored (database issue)",
+                    "warning": "Vector database is not properly configured"
+                }
+            
+            # Process the entire document as one chunk
             try:
-                embedding = embedding_service.get_embedding(chunk_text)
-                neon_chunk_id = await neon_service.store_chunk_to_neondb(
-                    chunk_text, embedding, pdf_document_db.id, user_id, file.filename, index, db
-                )
+                # Generate embedding for the entire document
+                embedding = embedding_service.get_embedding(sanitized_text)
                 
-                # Store PDFChunk metadata
-                pdf_chunk_metadata = db_models.PDFChunk(
-                    pdf_document_id=pdf_document_db.id,
-                    chunk_index=index,
-                    neon_db_chunk_id=neon_chunk_id
+                # Create document chunk in NEON - storing the entire PDF content
+                document_chunk = db_models.DocumentChunk(
+                    chunk_text=sanitized_text,
+                    embedding=embedding,
+                    document_metadata=json.dumps({
+                        "pdf_document_id": str(pdf_id),
+                        "user_id": str(user_id),
+                        "filename": file.filename,
+                        "full_document": "true"  # Flag to indicate this is a whole document
+                    })
                 )
-                db.add(pdf_chunk_metadata)
-                chunk_ids.append(neon_chunk_id)
+                neon_db.add(document_chunk)
+                await neon_db.flush()
+                
+                # Store reference in PDF chunks table (in PostgreSQL)
+                pdf_chunk = db_models.PDFChunk(
+                    pdf_document_id=pdf_id,
+                    chunk_index=0,  # Only one chunk now
+                    neon_db_chunk_id=str(document_chunk.id)
+                )
+                db.add(pdf_chunk)
+                logger.info(f"Added full document with ID {document_chunk.id}")
+                
+                # Commit both databases
+                await neon_db.commit()
+                await db.commit()
+                
             except Exception as e:
-                logger.error(f"Error processing chunk {index}: {str(e)}")
-                
-        await db.commit()
+                logger.error(f"Error processing document: {str(e)}", exc_info=True)
+                return {
+                    "id": pdf_id,
+                    "filename": file.filename,
+                    "upload_date": pdf_document_db.upload_date,
+                    "page_count": len(reader.pages),
+                    "message": "PDF metadata saved, but vector processing failed",
+                    "warning": str(e)
+                }
+            
+        finally:
+            # Always close the NeonDB session
+            await neon_db.close()
         
-        # Return a consistent response with all fields the frontend expects
         return {
-            "id": pdf_document_db.id,
+            "id": pdf_id,
             "filename": file.filename,
             "upload_date": pdf_document_db.upload_date,
             "page_count": len(reader.pages),
-            "chunk_count": len(chunk_ids),
             "message": "PDF uploaded and processed successfully!"
         }
-    except HTTPException as he:
-        await db.rollback()
-        raise he
     except Exception as e:
-        await db.rollback()
+        # Make sure to rollback on failure
+        try:
+            await db.rollback()
+        except:
+            pass
         logger.error(f"Error processing PDF: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error processing PDF: {str(e)}")
-
-
-async def store_chunk_to_neondb(chunk_text, embedding, pdf_document_id, user_id, filename, chunk_index, db: Session):
-    """Stores a text chunk and its embedding in NeonDB using SQLAlchemy ORM. Returns a chunk ID if needed."""
-    try:
-        metadata = { # Construct metadata JSON
-            "pdf_document_id": str(pdf_document_id), # Store IDs as strings for easier querying in SQL
-            "user_id": str(user_id),
-            "filename": filename,
-            "chunk_index": str(chunk_index) 
-        }
-
-        document_chunk = DocumentChunk(
-            chunk_text=chunk_text,
-            embedding=embedding,
-            document_metadata=json.dumps(metadata)
-        )
-        db.add(document_chunk)
-        db.commit()
-        db.refresh(document_chunk)
-
-        return str(document_chunk.id) # Return the ID of the stored chunk
-
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Database error storing chunk to NeonDB: {str(e)}")
-
-
-def chunk_text_into_segments(text: str, max_chunk_size: int = 1000, overlap: int = 200) -> list[str]:
-    """Split text into overlapping chunks of specified size."""
-    if not text:
-        return []
-        
-    # Remove excessive whitespace and normalize
-    text = " ".join(text.split())
-    
-    chunks = []
-    start = 0
-    text_length = len(text)
-    
-    while start < text_length:
-        # Calculate end with overlap
-        end = min(start + max_chunk_size, text_length)
-        
-        # If not at the end of text, try to find a good break point
-        if end < text_length:
-            # Look for sentence end (.!?) or paragraph break within last 200 chars
-            last_period = max(
-                text.rfind('. ', end - overlap, end),
-                text.rfind('! ', end - overlap, end),
-                text.rfind('? ', end - overlap, end),
-                text.rfind('\n', end - overlap, end)
-            )
-            
-            if last_period != -1:
-                end = last_period + 1  # Include the period
-        
-        chunks.append(text[start:end])
-        
-        # Move start with overlap if not at the end
-        if end < text_length:
-            start = end - overlap if end > overlap else end
-        else:
-            start = end
-            
-    return chunks
-
-
-async def get_neon_chunks_by_pdf_document_id(pdf_document_id: int, db: Session):
-    """Retrieves NeonDB chunk texts associated with a given PDF Document ID."""
-
-    try:
-        # 1. Find all chunk records in PDFChunk for the given PDF document
-        pdf_chunk_rows = await db.execute(
-            select(db_models.PDFChunk).where(db_models.PDFChunk.pdf_document_id == pdf_document_id)
-        )
-        pdf_chunks = pdf_chunk_rows.scalars().all()
-        if not pdf_chunks:
-            return []  # No chunks found for this PDF
-
-        # 2. Gather the NeonDB chunk IDs
-        chunk_ids = [chunk.neon_db_chunk_id for chunk in pdf_chunks]
-
-        # 3. Fetch the corresponding DocumentChunk rows from NeonDB
-        results = await db.execute(
-            select(db_models.DocumentChunk)
-            .where(db_models.DocumentChunk.id.in_(chunk_ids))
-        )
-        document_chunks = results.scalars().all()
-
-        # 4. Return the chunk_text fields
-        return [chunk.chunk_text for chunk in document_chunks]
-
-    except Exception as e:
-        logger.error(f"Error retrieving NeonDB chunks: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error retrieving NeonDB chunks: {str(e)}")
 
 async def list_user_pdfs_handler(current_user: db_models.User, db: Session) -> list[dict]:
     """Handler for listing user PDFs, offloaded from route."""

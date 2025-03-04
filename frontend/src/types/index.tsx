@@ -30,5 +30,4 @@ export interface PdfDocument {
 export interface ChatRequest {
   message: string;
   session_id?: number;
-  context_pdfs?: number[];
 }

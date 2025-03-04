@@ -1,9 +1,10 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Text
+from sqlalchemy import Column, Float, Integer, String, DateTime, ForeignKey, Boolean, Text, TypeDecorator
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy.dialects import postgresql
 from app.core.database import Base, NeonBase
 from pgvector.sqlalchemy import Vector
+import sqlalchemy as sa
 
 class User(Base):
     __tablename__ = "users"

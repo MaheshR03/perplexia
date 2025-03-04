@@ -3,6 +3,9 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import declarative_base, sessionmaker
 from .config import settings
 import ssl
+import logging
+
+logger = logging.getLogger(__name__)
 
 Base = declarative_base()           # For common tables (Supabase)
 NeonBase = declarative_base()       # For Neon-specific tables
@@ -23,7 +26,17 @@ engine = create_async_engine(
     connect_args={"ssl": ssl_context}
 )
 
-neon_engine = create_async_engine(NEON_DATABASE_URL)
+# Fix: Add SSL for NeonDB connection as well
+neon_engine = create_async_engine(
+    NEON_DATABASE_URL,
+    connect_args={"ssl": ssl_context},
+    # Add connection pooling settings
+    pool_pre_ping=True,        # Verify connections before using them
+    pool_recycle=300,          # Recycle connections after 5 minutes
+    pool_size=5,               # Keep a smaller pool size
+    max_overflow=10,           # Allow up to 10 extra connections
+    pool_timeout=30            # Wait up to 30 seconds for a connection
+)
 
 AsyncSessionLocal = sessionmaker(
     bind=engine, class_=AsyncSession, expire_on_commit=False
@@ -45,4 +58,4 @@ async def get_neon_db():
     try:
         yield db
     finally:
-        await db.close()
+        await db.close()  

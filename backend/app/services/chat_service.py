@@ -16,7 +16,6 @@ async def chat_stream_handler(chat_req: ChatRequest, request: Request, db: Sessi
     query = chat_req.query
     start_time = time.time()
     session_id = chat_req.session_id
-    context_pdfs = chat_req.context_pdfs or []
     
     # Create or get chat session
     if session_id:
@@ -30,12 +29,23 @@ async def chat_stream_handler(chat_req: ChatRequest, request: Request, db: Sessi
         if not chat_session:
             raise HTTPException(status_code=404, detail="Chat session not found or not owned by user")
         chat_session_id = session_id
+        
+        # Retrieve PDFs associated with this session from database
+        session_pdfs_result = await db.execute(
+            select(db_models.ChatSessionPDF.pdf_document_id).where(
+                db_models.ChatSessionPDF.chat_session_id == chat_session_id
+            )
+        )
+        context_pdfs = [pdf_id for pdf_id, in session_pdfs_result]
+        logger.info(f"Retrieved {len(context_pdfs)} PDFs from session {chat_session_id}")
     else:
+        # For new sessions, no PDFs are associated yet
         chat_session = db_models.ChatSession(user_id=current_user.id)
         db.add(chat_session)
         await db.commit()
         await db.refresh(chat_session)
         chat_session_id = chat_session.id
+        context_pdfs = []
 
     chat_history_str = await get_chat_history_str(db, chat_session_id)
     
@@ -44,11 +54,24 @@ async def chat_stream_handler(chat_req: ChatRequest, request: Request, db: Sessi
     if context_pdfs:
         try:
             query_embedding = embedding_service.get_embedding(query)
-            retrieved_chunks = await neon_service.search_neon_chunks(db, query_embedding, top_n=5)
-            pdf_context = "\n".join(retrieved_chunks) if retrieved_chunks else "No relevant PDFs found."
+            
+            # Pass user_id and pdf_ids to ensure proper filtering
+            retrieved_chunks = await neon_service.search_neon_chunks(
+                query_embedding=query_embedding,
+                user_id=current_user.id,
+                pdf_ids=context_pdfs,
+                top_n=5
+            )
+            
+            if retrieved_chunks:
+                pdf_context = "Here are the most relevant sections from your documents:\n\n" + \
+                            "\n\n".join(retrieved_chunks)
+            else:
+                pdf_context = "No relevant information found in the specified documents."
+                
         except Exception as e:
-            logger.error(f"Error retrieving PDF context: {e}")
-            pdf_context = "Error retrieving PDF context."
+            logger.error(f"Error retrieving PDF context: {str(e)}", exc_info=True)
+            pdf_context = "Error retrieving PDF context from your documents."
     
     # Search context if requested
     tavily_context = ""

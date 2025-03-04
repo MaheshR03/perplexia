@@ -3,7 +3,6 @@ from .gemini_service import generate_response_with_gemini_streaming
 from .neon_service import search_neon_chunks
 from .pdf_service import (
     process_pdf_and_store,
-    chunk_text_into_segments,
     list_user_pdfs_handler
 )
 from .tavily_service import fetch_tavily_data

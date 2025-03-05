@@ -23,7 +23,6 @@ export function Layout({
     deleteSession,
     renameSession,
     sessionId: activeSessionId,
-    switchSession,
   } = useChat(sessionId);
 
   const handleCreateSession = async () => {
@@ -34,7 +33,7 @@ export function Layout({
   };
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen text-slate-100 bg-[#191a1a]">
       {showSidebar && (
         <Sidebar
           sessions={sessions}
@@ -44,7 +43,9 @@ export function Layout({
           currentSessionId={activeSessionId}
         />
       )}
-      <main className="flex-1 overflow-hidden">{children}</main>
+      <main className="relative mx-auto flex h-full w-full flex-1 flex-col md:px-2">
+        {children}
+      </main>
     </div>
   );
 }

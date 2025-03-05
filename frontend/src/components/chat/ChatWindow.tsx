@@ -25,19 +25,19 @@ export function ChatWindow({
   }, [messages]);
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex-1 overflow-y-auto">
+    <div className="flex h-full flex-col overflow-y-auto overflow-x-hidden-">
+      <div className="flex-1 max-w-3xl">
         {messages.length === 0 ? (
           <div className="flex h-full items-center justify-center">
             <div className="max-w-md text-center">
-              <h2 className="text-2xl font-bold">Welcome to the Chat</h2>
+              <h2 className="text-2xl font-bold">Welcome to Perplexia</h2>
               <p className="mt-2 text-muted-foreground">
                 Start a conversation by typing a message below.
               </p>
             </div>
           </div>
         ) : (
-          <div>
+          <div className="w-full">
             {messages.map((message) => (
               <ChatMessageComponent key={message.id} message={message} />
             ))}

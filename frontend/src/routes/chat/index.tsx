@@ -42,11 +42,7 @@ function ChatIndexPage() {
 
   return (
     <Layout>
-      <div className="flex h-screen flex-col">
-        <header className="border-b bg-background p-4">
-          <h1 className="text-xl font-semibold">New Chat</h1>
-        </header>
-
+      <div className="flex h-screen flex-col bg-[#191a1a]">
         <div className="flex-1 overflow-hidden">
           <ChatWindow
             messages={messages}

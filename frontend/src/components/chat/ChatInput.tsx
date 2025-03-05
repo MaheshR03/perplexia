@@ -34,7 +34,7 @@ export function ChatInput({
   };
 
   return (
-    <div className="border-t bg-background p-4">
+    <div className="bg-background p-4 max-w-3xl">
       <form onSubmit={handleSendMessage} className="flex flex-col gap-4">
         <div className="flex gap-2">
           <PDFUploader sessionId={sessionId} />

@@ -27,7 +27,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
   return (
     <div
       className={cn(
-        "flex w-full gap-3 p-4",
+        "flex gap-3 p-4",
         is_user_message
           ? "bg-muted/50 flex-row-reverse" // Use flex-row-reverse for user messages
           : "bg-background"
@@ -52,7 +52,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
       {/* Message content - with different styling based on sender */}
       <div
         className={cn(
-          "space-y-2 max-w-[80%]",
+          "space-y-2 max-w-[80%] break-words overflow-hidden",
           is_user_message
             ? "text-right" // Right-align text for user messages
             : "text-left" // Left-align text for bot messages
@@ -60,12 +60,31 @@ export function ChatMessage({ message }: ChatMessageProps) {
       >
         <div
           className={cn(
-            "prose prose-slate dark:prose-invert",
+            "prose prose-slate dark:prose-invert prose-pre:overflow-x-auto prose-pre:whitespace-pre-wrap prose-code:break-words prose-a:break-all",
             is_user_message && "ml-auto" // Push user messages to the right
           )}
         >
           {content ? (
-            <ReactMarkdown>{content}</ReactMarkdown>
+            <div className="break-words whitespace-pre-line">
+              <ReactMarkdown
+                components={{
+                  pre: ({ node, ...props }) => (
+                    <pre
+                      className="overflow-x-auto max-w-full whitespace-pre-wrap"
+                      {...props}
+                    />
+                  ),
+                  code: ({ node, ...props }) => (
+                    <code
+                      className="break-all whitespace-pre-wrap"
+                      {...props}
+                    />
+                  ),
+                }}
+              >
+                {content}
+              </ReactMarkdown>
+            </div>
           ) : is_user_message ? null : (
             <div className="flex items-center space-x-2">
               <span className="text-muted-foreground">

@@ -92,7 +92,7 @@ export function Sidebar({
       </div>
 
       {/* Desktop Sidebar */}
-      <div className="hidden lg:flex lg:w-64 lg:flex-col lg:border-r">
+      <div className="hidden lg:flex lg:w-64 lg:flex-col">
         <SidebarContent
           sessions={sessions}
           onCreateSession={onCreateSession}
@@ -162,9 +162,9 @@ function SidebarContent({
   };
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto bg-background text-foreground p-3 bg-white">
+    <div className="flex h-full flex-col overflow-y-auto bg-background text-foreground p-3 bg-[#202222] font-mono">
       <div className="mb-4 flex items-center justify-between px-2">
-        <h2 className="text-lg font-semibold">Your Chats</h2>
+        <h2 className="text-lg font-semibold">Perplexia</h2>
         <div className="flex gap-2">
           <Button
             variant="outline"

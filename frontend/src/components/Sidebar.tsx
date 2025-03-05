@@ -25,36 +25,6 @@ import {
 } from "./ui/dialog";
 import { DialogDescription } from "@radix-ui/react-dialog";
 
-// Theme toggle component
-function ThemeToggle() {
-  const [isDark, setIsDark] = useState(() =>
-    document.documentElement.classList.contains("dark")
-  );
-
-  const toggleTheme = () => {
-    const newMode = !isDark;
-    setIsDark(newMode);
-    if (newMode) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
-  };
-
-  return (
-    <Button
-      variant="outline"
-      size="icon"
-      onClick={toggleTheme}
-      className="h-8 w-8"
-    >
-      {isDark ? <Sun size={16} /> : <Moon size={16} />}
-    </Button>
-  );
-}
-
 interface SidebarProps {
   sessions: ChatSession[];
   onCreateSession: () => void;
@@ -196,7 +166,6 @@ function SidebarContent({
       <div className="mb-4 flex items-center justify-between px-2">
         <h2 className="text-lg font-semibold">Your Chats</h2>
         <div className="flex gap-2">
-          <ThemeToggle />
           <Button
             variant="outline"
             size="icon"

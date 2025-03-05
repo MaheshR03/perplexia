@@ -23,15 +23,16 @@ function HomePage() {
 
   return (
     <Layout>
-      <div className="flex h-screen flex-col w-[50vw]">
-        <h1 className="text-xl font-semibold">Perplexia</h1>
-        <div className="flex-1 overflow-hidden">
-          <ChatWindow
-            messages={messages}
-            onSendMessage={handleSendMessage}
-            isLoading={isLoading}
-          />
-        </div>
+      <div
+        className={`flex h-screen w-full flex-col overflow-y-auto overflow-x-hidden lg:pl-10 ${
+          messages.length ? "items-start" : "items-center"
+        }`}
+      >
+        <ChatWindow
+          messages={messages}
+          onSendMessage={handleSendMessage}
+          isLoading={isLoading}
+        />
       </div>
     </Layout>
   );

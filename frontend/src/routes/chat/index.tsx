@@ -10,7 +10,7 @@ export const Route = createFileRoute("/chat/")({
   beforeLoad: async ({}) => {
     // Verify user is authenticated
     const token = localStorage.getItem("clerk-token");
-    console.log(token);
+
     if (!token) {
       throw redirect({ to: "/" });
     }
@@ -42,14 +42,16 @@ function ChatIndexPage() {
 
   return (
     <Layout>
-      <div className="flex h-screen flex-col bg-[#191a1a]">
-        <div className="flex-1 overflow-hidden">
-          <ChatWindow
-            messages={messages}
-            onSendMessage={sendMessage}
-            isLoading={isLoading}
-          />
-        </div>
+      <div
+        className={`flex h-screen w-full flex-col overflow-y-auto overflow-x-hidden lg:pl-10 ${
+          messages.length ? "items-start" : "items-center"
+        }`}
+      >
+        <ChatWindow
+          messages={messages}
+          onSendMessage={sendMessage}
+          isLoading={isLoading}
+        />
       </div>
     </Layout>
   );

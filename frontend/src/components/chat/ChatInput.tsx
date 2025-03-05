@@ -4,14 +4,17 @@ import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 import { Send, Loader2 } from "lucide-react";
 import { PDFUploader } from "../PDFUploader";
+import { ChatMessage } from "@/types";
 
 interface ChatInputProps {
+  messages: ChatMessage[];
   onSendMessage: (message: string) => void;
   isLoading: boolean;
   sessionId?: number;
 }
 
 export function ChatInput({
+  messages,
   onSendMessage,
   isLoading,
   sessionId,
@@ -34,7 +37,11 @@ export function ChatInput({
   };
 
   return (
-    <div className="bg-background p-4 max-w-3xl">
+    <div
+      className={`bg-[#191a1a] p-4 pt-2 w-full max-w-3xl  ${
+        messages.length ? "fixed bottom-0" : ""
+      }`}
+    >
       <form onSubmit={handleSendMessage} className="flex flex-col gap-4">
         <div className="flex gap-2">
           <PDFUploader sessionId={sessionId} />
@@ -51,8 +58,9 @@ export function ChatInput({
             <Button
               size="icon"
               type="submit"
+              variant="ghost"
               disabled={isLoading || !message.trim()}
-              className="absolute bottom-1 right-1"
+              className="absolute bottom-1 right-1 "
             >
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

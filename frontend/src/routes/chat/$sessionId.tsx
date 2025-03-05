@@ -26,8 +26,7 @@ function ChatSessionPage() {
   const { sessionId } = Route.useParams();
   const sessionIdNum = parseInt(sessionId);
 
-  const { messages, sendMessage, isLoading, currentSession, switchSession } =
-    useChat();
+  const { messages, sendMessage, isLoading, switchSession } = useChat();
 
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
@@ -56,22 +55,18 @@ function ChatSessionPage() {
   }
 
   return (
-    <Layout>
-      <div className="flex h-screen flex-col">
-        <header className="border-b bg-background p-4">
-          <h1 className="text-xl font-semibold">
-            {currentSession?.name || "Chat"}
-          </h1>
-        </header>
-
-        <div className="flex-1 overflow-hidden">
-          <ChatWindow
-            messages={messages}
-            onSendMessage={(message) => sendMessage(message)}
-            isLoading={isLoading}
-            sessionId={sessionIdNum}
-          />
-        </div>
+    <Layout sessionId={sessionIdNum}>
+      <div
+        className={`flex h-screen w-full flex-col overflow-y-auto overflow-x-hidden lg:pl-10 ${
+          messages.length ? "items-start" : "items-center"
+        }`}
+      >
+        <ChatWindow
+          messages={messages}
+          onSendMessage={(message) => sendMessage(message)}
+          isLoading={isLoading}
+          sessionId={sessionIdNum}
+        />
       </div>
     </Layout>
   );

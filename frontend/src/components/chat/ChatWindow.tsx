@@ -25,8 +25,8 @@ export function ChatWindow({
   }, [messages]);
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto overflow-x-hidden-">
-      <div className="flex-1 max-w-3xl">
+    <div className="flex h-full w-full flex-col items-center">
+      <div className="flex-1 w-full max-w-3xl">
         {messages.length === 0 ? (
           <div className="flex h-full items-center justify-center">
             <div className="max-w-md text-center">
@@ -47,6 +47,7 @@ export function ChatWindow({
       </div>
 
       <ChatInput
+        messages={messages}
         onSendMessage={onSendMessage}
         isLoading={isLoading}
         sessionId={sessionId}

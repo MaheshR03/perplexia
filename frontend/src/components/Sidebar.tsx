@@ -8,8 +8,6 @@ import {
   Trash2,
   Edit2,
   LogOut,
-  Sun,
-  Moon,
   PanelLeft,
 } from "lucide-react";
 import { ChatSession } from "../types";
@@ -173,6 +171,7 @@ function SidebarContent({
               onCreateSession();
               if (setIsOpen) setIsOpen(false);
             }}
+            className="hover:bg-neutral-700 hover:cursor-pointer"
           >
             <Plus className="h-4 w-4" />
           </Button>
@@ -198,7 +197,8 @@ function SidebarContent({
                     />
                     <Button
                       size="sm"
-                      variant="secondary"
+                      className="ml-2"
+                      variant="default"
                       onClick={() => handleRename(session.id)}
                     >
                       Save
@@ -208,10 +208,10 @@ function SidebarContent({
                   <Link
                     to="/chat/$sessionId"
                     params={{ sessionId: session.id.toString() }}
-                    className={`flex items-center space-x-2 rounded-md px-3 py-2 text-sm
+                    className={`flex items-center space-x-2 rounded-md px-3 my-2 py-2 text-sm hover:bg-neutral-700 hover:cursor-pointer
                       ${
                         currentSessionId === session.id
-                          ? "bg-accent text-accent-foreground"
+                          ? "bg-[#191a1a] text-accent-foreground"
                           : "hover:bg-accent/50"
                       }`}
                     onClick={() => {
@@ -224,7 +224,7 @@ function SidebarContent({
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6"
+                        className="h-6 w-6 hover:text-green-700 hover:cursor-pointer"
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -236,7 +236,7 @@ function SidebarContent({
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6 hover:bg-destructive hover:text-destructive-foreground"
+                        className="h-6 w-6 hover:text-red-700 hover:cursor-pointer"
                         onClick={(e) => handleDeleteClick(e, session.id)}
                       >
                         <Trash2 className="h-3 w-3" />
@@ -246,7 +246,7 @@ function SidebarContent({
                       open={deleteDialogOpen}
                       onOpenChange={setDeleteDialogOpen}
                     >
-                      <DialogContent className="bg-white dark:bg-gray-800">
+                      <DialogContent className="bg-[#202222] text-slate-100 border-slate-900">
                         <DialogHeader>
                           <DialogTitle>Delete {session.name}</DialogTitle>
                           <DialogDescription>
@@ -261,7 +261,7 @@ function SidebarContent({
                           >
                             Cancel
                           </Button>
-                          <Button variant="outline" onClick={confirmDelete}>
+                          <Button variant="destructive" onClick={confirmDelete}>
                             Delete
                           </Button>
                         </DialogFooter>
@@ -293,7 +293,7 @@ function SidebarContent({
         {isAuthenticated ? (
           <Button
             variant="outline"
-            className="w-full justify-start"
+            className="w-full justify-start hover:bg-neutral-700 hover:cursor-pointer"
             onClick={() => signOut()}
           >
             <LogOut className="mr-2 h-4 w-4" />
@@ -307,7 +307,10 @@ function SidebarContent({
               if (setIsOpen) setIsOpen(false);
             }}
           >
-            <Button variant="outline" className="w-full justify-start">
+            <Button
+              variant="outline"
+              className="w-full justify-start hover:bg-neutral-700 hover:cursor-pointer"
+            >
               Sign In
             </Button>
           </Link>

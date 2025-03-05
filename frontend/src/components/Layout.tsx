@@ -17,13 +17,8 @@ export function Layout({
 }: LayoutProps) {
   const navigate = useNavigate();
 
-  const {
-    sessions,
-    createSession,
-    deleteSession,
-    renameSession,
-    sessionId: activeSessionId,
-  } = useChat(sessionId);
+  const { sessions, createSession, deleteSession, renameSession } =
+    useChat(sessionId);
 
   const handleCreateSession = async () => {
     const session = await createSession();
@@ -40,10 +35,10 @@ export function Layout({
           onCreateSession={handleCreateSession}
           onDeleteSession={deleteSession}
           onRenameSession={renameSession}
-          currentSessionId={activeSessionId}
+          currentSessionId={sessionId}
         />
       )}
-      <main className="relative mx-auto flex h-full w-full flex-1 flex-col md:px-2">
+      <main className="relative flex h-full w-full flex-1 flex-col md:px-2">
         {children}
       </main>
     </div>

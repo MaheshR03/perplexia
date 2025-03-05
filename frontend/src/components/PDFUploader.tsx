@@ -194,6 +194,7 @@ export function PDFUploader({ sessionId }: PDFUploaderProps) {
         title="Manage PDFs"
         variant="outline"
         style={{ borderRadius: "50%" }}
+        className="hover:bg-neutral-700 hover:cursor-pointer"
       >
         <FileUp className="h-4 w-4" />
       </Button>
@@ -207,7 +208,7 @@ export function PDFUploader({ sessionId }: PDFUploaderProps) {
       />
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-md bg-white">
+        <DialogContent className="sm:max-w-md bg-[#202222] text-slate-100 border-slate-900">
           <DialogHeader>
             <DialogTitle>Manage PDFs</DialogTitle>
           </DialogHeader>
@@ -221,7 +222,7 @@ export function PDFUploader({ sessionId }: PDFUploaderProps) {
           <div className="space-y-4">
             <Button
               variant="outline"
-              className="w-full relative"
+              className="w-full relative hover:bg-neutral-700 hover:cursor-pointer"
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
             >
@@ -271,11 +272,13 @@ export function PDFUploader({ sessionId }: PDFUploaderProps) {
                       </div>
                       {sessionId && (
                         <Button
-                          variant={isInSession ? "default" : "outline"}
+                          variant="outline"
                           size="sm"
                           onClick={() => togglePdfInSession(pdf)}
                           className={
-                            isInSession ? "bg-green-600 hover:bg-green-700" : ""
+                            isInSession
+                              ? "bg-green-800 hover:bg-green-900 border-none"
+                              : "hover:border-green-700"
                           }
                         >
                           {isInSession ? (

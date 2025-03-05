@@ -5,6 +5,7 @@ import { ChatProvider } from "./context/ChatContext";
 import { ClerkProvider } from "@clerk/clerk-react";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
+import { AuthProvider } from "./context/AuthContext";
 
 // Create the router instance
 const router = createRouter({
@@ -28,8 +29,10 @@ if (!clerkPubKey) {
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <ClerkProvider publishableKey={clerkPubKey}>
-    <ChatProvider>
-      <RouterProvider router={router} />
-    </ChatProvider>
+    <AuthProvider>
+      <ChatProvider>
+        <RouterProvider router={router} />
+      </ChatProvider>
+    </AuthProvider>
   </ClerkProvider>
 );

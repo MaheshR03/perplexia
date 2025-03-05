@@ -1,12 +1,31 @@
-// src/hooks/useAuth.tsx
-import { useEffect, useState } from "react";
+// src/context/AuthContext.tsx
+import {
+  createContext,
+  useContext,
+  ReactNode,
+  useState,
+  useEffect,
+} from "react";
 import { useClerk, useUser } from "@clerk/clerk-react";
 import { userApi, setClerkSessionRef } from "../lib/api";
 import { User } from "../types";
 
-export function useAuth() {
+// Define the context type
+interface AuthContextType {
+  isAuthenticated: boolean;
+  user: User | null;
+  clerkUser: any;
+  isLoading: boolean;
+  authToken: string | null;
+}
+
+// Create the context
+const AuthContext = createContext<AuthContextType | null>(null);
+
+// Provider component
+export function AuthProvider({ children }: { children: ReactNode }) {
   const { isLoaded, isSignedIn, user } = useUser();
-  const { session } = useClerk();
+  const { session, signOut: clerkSignOut } = useClerk();
   const [appUser, setAppUser] = useState<User | null>(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [authToken, setAuthToken] = useState<string | null>(() => {
@@ -66,7 +85,7 @@ export function useAuth() {
     return null;
   };
 
-  // Set up periodic token refresh (every minute)
+  // Set up periodic token refresh (every 5 minutes)
   useEffect(() => {
     if (!isLoaded || !isSignedIn) return;
 
@@ -74,16 +93,44 @@ export function useAuth() {
     refreshToken();
 
     // Refresh token periodically
-    const intervalId = setInterval(refreshToken, 1 * 60 * 1000); // 1 minute
+    const intervalId = setInterval(refreshToken, 5 * 60 * 1000); // 5 minutes
 
     return () => clearInterval(intervalId);
   }, [isLoaded, isSignedIn, session]);
 
-  return {
+  // Handle sign out
+  const signOut = async () => {
+    try {
+      localStorage.removeItem("clerk-token");
+      setAppUser(null);
+      setAuthToken(null);
+      await clerkSignOut();
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
+  const authContextValue: AuthContextType = {
     isAuthenticated: !!appUser,
     user: appUser,
     clerkUser: user,
     isLoading: !isLoaded || isLoadingUser,
     authToken,
+    signOut,
   };
+
+  return (
+    <AuthContext.Provider value={authContextValue}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+// Custom hook to use the auth context
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === null) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
 }

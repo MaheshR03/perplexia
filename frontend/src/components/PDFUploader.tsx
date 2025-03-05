@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import api, { pdfApi } from "../lib/api";
 import { PdfDocument } from "../types";
 import { redirect } from "@tanstack/react-router";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "../context/AuthContext";
 
 interface PDFUploaderProps {
   sessionId?: number;

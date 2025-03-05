@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { ChatSession } from "../types";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "../context/AuthContext";
 import { useClerk } from "@clerk/clerk-react";
 import {
   Dialog,

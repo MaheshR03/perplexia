@@ -3,7 +3,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Layout } from "../../components/Layout";
 import { ChatWindow } from "../../components/chat/ChatWindow";
 import { useChat } from "../../context/ChatContext";
-import { useAuth } from "../../hooks/useAuth";
+import { useAuth } from "../../context/AuthContext";
 import { useEffect } from "react";
 
 export const Route = createFileRoute("/chat/$sessionId")({

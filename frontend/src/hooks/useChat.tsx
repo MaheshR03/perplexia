@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { chatApi } from "../lib/api";
 import { ChatMessage, ChatSession } from "../types";
-import { useAuth } from "./useAuth";
+import { useAuth } from "../context/AuthContext";
 
 export function useChat(initialSessionId?: number) {
   const [sessionId, setSessionId] = useState<number | undefined>(

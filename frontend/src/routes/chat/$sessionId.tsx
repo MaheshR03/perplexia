@@ -2,7 +2,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Layout } from "../../components/Layout";
 import { ChatWindow } from "../../components/chat/ChatWindow";
-import { useChat } from "../../hooks/useChat";
+import { useChat } from "../../context/ChatContext";
 import { useAuth } from "../../hooks/useAuth";
 import { useEffect } from "react";
 
@@ -26,7 +26,14 @@ function ChatSessionPage() {
   const { sessionId } = Route.useParams();
   const sessionIdNum = parseInt(sessionId);
 
-  const { messages, sendMessage, isLoading, switchSession } = useChat();
+  const {
+    messages,
+    sendMessage,
+    isLoading,
+    switchSession,
+    isSearchMode,
+    toggleSearchMode,
+  } = useChat();
 
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
@@ -66,6 +73,8 @@ function ChatSessionPage() {
           onSendMessage={(message) => sendMessage(message)}
           isLoading={isLoading}
           sessionId={sessionIdNum}
+          isSearchMode={isSearchMode}
+          toggleSearchMode={toggleSearchMode}
         />
       </div>
     </Layout>

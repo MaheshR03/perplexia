@@ -2,7 +2,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Layout } from "../../components/Layout";
 import { ChatWindow } from "../../components/chat/ChatWindow";
-import { useChat } from "../../hooks/useChat";
+import { useChat } from "../../context/ChatContext";
 import { useAuth } from "../../hooks/useAuth";
 
 export const Route = createFileRoute("/chat/")({
@@ -18,7 +18,8 @@ export const Route = createFileRoute("/chat/")({
 });
 
 function ChatIndexPage() {
-  const { messages, sendMessage, isLoading } = useChat();
+  const { messages, sendMessage, isLoading, isSearchMode, toggleSearchMode } =
+    useChat();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   // If still checking auth, show loading
@@ -51,6 +52,8 @@ function ChatIndexPage() {
           messages={messages}
           onSendMessage={sendMessage}
           isLoading={isLoading}
+          isSearchMode={isSearchMode}
+          toggleSearchMode={toggleSearchMode}
         />
       </div>
     </Layout>

@@ -9,7 +9,7 @@ def fetch_tavily_data(query: str) -> str:
     """Fetch extra topical information from Tavilly."""
     try:
         client = TavilyClient(api_key=settings.TAVILY_API_KEY)
-        response = client.search(query=query)
+        response = client.search(query=query, include_images=False)
         print(response)
         return response
     except Exception as e:

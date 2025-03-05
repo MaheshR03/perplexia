@@ -100,7 +100,12 @@ async def chat_stream_handler(
             tavily_context = "No additional web info found."
 
     prompt = f"""
-    You are a helpful assistant. Use the context if provided to answer the user question at the end.
+    You are a helpful assistant. Use all the context if provided to answer the user question at the end.
+
+    {chat_req.isSearchMode and f'''
+    **Web Search Results:**
+    {tavily_context}
+    ''' or ''}
 
     **Document Context:**
     {pdf_context}

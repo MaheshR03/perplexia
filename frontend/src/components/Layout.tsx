@@ -1,7 +1,6 @@
-// src/components/Layout.tsx
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 import { Sidebar } from "./Sidebar";
-import { useChat } from "../hooks/useChat";
+import { useChat } from "../context/ChatContext";
 import { useNavigate } from "@tanstack/react-router";
 
 interface LayoutProps {
@@ -17,8 +16,19 @@ export function Layout({
 }: LayoutProps) {
   const navigate = useNavigate();
 
-  const { sessions, createSession, deleteSession, renameSession } =
-    useChat(sessionId);
+  const {
+    sessions,
+    createSession,
+    deleteSession,
+    renameSession,
+    switchSession,
+  } = useChat();
+
+  useEffect(() => {
+    if (sessionId !== undefined) {
+      switchSession(sessionId);
+    }
+  }, [sessionId, switchSession]);
 
   const handleCreateSession = async () => {
     const session = await createSession();

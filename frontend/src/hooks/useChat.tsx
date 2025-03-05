@@ -11,10 +11,34 @@ export function useChat(initialSessionId?: number) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSearchMode, setIsSearchMode] = useState(false);
   const [messageCount, setMessageCount] = useState(0);
   const { isAuthenticated } = useAuth();
-  const navigate = useNavigate();
+
+  // Use a ref for navigate to avoid the initial null issue
+  const navigateRef = useRef<any>(null);
+
+  // Try to get the navigate function, but don't fail if it's not available
+  try {
+    const navigate = useNavigate();
+    navigateRef.current = navigate;
+  } catch (e) {
+    // Navigation isn't available yet, that's okay
+    console.log("Navigation not available yet");
+  }
+
+  // Add this function to safely handle navigation
+  const handleNavigation = useCallback((to: string) => {
+    if (navigateRef.current) {
+      navigateRef.current({ to });
+    } else {
+      console.warn("Navigation attempted before router was available");
+    }
+  }, []);
+
   const abortController = useRef<AbortController | null>(null);
+
+  console.log(isSearchMode);
 
   // Derive current session from sessions array and sessionId
   const currentSession = useMemo(() => {
@@ -76,7 +100,7 @@ export function useChat(initialSessionId?: number) {
         // Handle different error types
         if (error?.response?.status === 404) {
           // Session not found, redirect to the chat homepage
-          navigate({ to: "/chat" });
+          handleNavigation("/chat");
         } else if (error?.response?.status === 401) {
           // Authentication error, refresh token and retry once
           try {
@@ -85,14 +109,14 @@ export function useChat(initialSessionId?: number) {
             setMessages(data.messages || []);
           } catch (refreshError) {
             // If refresh fails too, navigate to login
-            navigate({ to: "/login" });
+            handleNavigation("/login");
           }
         }
       } finally {
         setIsLoading(false);
       }
     },
-    [isAuthenticated, navigate]
+    [isAuthenticated, handleNavigation]
   );
 
   // Load session data when sessionId changes
@@ -146,7 +170,7 @@ export function useChat(initialSessionId?: number) {
 
         // Check if login is required (after 3 messages for non-authenticated users)
         if (!isAuthenticated && messageCount >= 2) {
-          navigate({ to: "/login" });
+          handleNavigation("/login");
           return;
         }
 
@@ -163,7 +187,7 @@ export function useChat(initialSessionId?: number) {
             },
             body: JSON.stringify({
               query: message,
-              isSearchMode: false,
+              isSearchMode: isSearchMode,
               session_id: sessionId,
             }),
             signal: abortController.current.signal,
@@ -199,7 +223,7 @@ export function useChat(initialSessionId?: number) {
                     // Update our internal state
                     setSessionId(newSessionId);
                     // Navigate to the new session
-                    navigate({ to: `/chat/${newSessionId}` });
+                    handleNavigation(`/chat/${newSessionId}`);
                   }
                 } else if (data.type === "content") {
                   // Update assistant message with new content
@@ -229,7 +253,7 @@ export function useChat(initialSessionId?: number) {
         abortController.current = null;
       }
     },
-    [isAuthenticated, messageCount, sessionId, navigate, fetchSessions]
+    [isAuthenticated, messageCount, sessionId, handleNavigation, fetchSessions]
   );
 
   // Create a new chat session
@@ -241,14 +265,14 @@ export function useChat(initialSessionId?: number) {
         // Reset session ID
         setSessionId(undefined);
         // Navigate to chat - sending the first message will create a session
-        navigate({ to: "/chat" });
+        handleNavigation("/chat");
         return { id: null, name };
       } catch (error) {
         console.error("Failed to create chat session:", error);
         return null;
       }
     },
-    [isAuthenticated, navigate]
+    [isAuthenticated, handleNavigation]
   );
 
   // Delete a chat session
@@ -262,13 +286,13 @@ export function useChat(initialSessionId?: number) {
 
         if (sessionId === id) {
           setSessionId(undefined);
-          navigate({ to: "/chat" });
+          handleNavigation("/chat");
         }
       } catch (error) {
         console.error(`Failed to delete chat session ${id}:`, error);
       }
     },
-    [isAuthenticated, sessionId, navigate]
+    [isAuthenticated, sessionId, handleNavigation]
   );
 
   // Rename a chat session
@@ -306,6 +330,7 @@ export function useChat(initialSessionId?: number) {
     isLoading,
     messageCount,
     sessionId,
+    isSearchMode,
     switchSession,
     sendMessage,
     createSession,
@@ -313,5 +338,6 @@ export function useChat(initialSessionId?: number) {
     renameSession,
     fetchSessions,
     fetchSession,
+    toggleSearchMode: () => setIsSearchMode((prev) => !prev),
   };
 }

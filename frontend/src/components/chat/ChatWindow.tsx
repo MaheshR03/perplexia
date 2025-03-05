@@ -9,6 +9,8 @@ interface ChatWindowProps {
   onSendMessage: (message: string) => void;
   isLoading: boolean;
   sessionId?: number;
+  isSearchMode: boolean;
+  toggleSearchMode: () => void;
 }
 
 export function ChatWindow({
@@ -16,6 +18,8 @@ export function ChatWindow({
   onSendMessage,
   isLoading,
   sessionId,
+  isSearchMode,
+  toggleSearchMode,
 }: ChatWindowProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -58,6 +62,8 @@ export function ChatWindow({
         onSendMessage={onSendMessage}
         isLoading={isLoading}
         sessionId={sessionId}
+        isSearchMode={isSearchMode}
+        toggleSearchMode={toggleSearchMode}
       />
     </div>
   );

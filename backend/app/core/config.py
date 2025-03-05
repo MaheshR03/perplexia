@@ -27,7 +27,7 @@ class Settings:
     CLERK_SECRET_KEY = os.environ.get("CLERK_SECRET_KEY")
     CLERK_JWKS_ENDPOINT = os.environ.get("CLERK_JWKS_ENDPOINT")
     
-    TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY")
+    TAVILY_API_KEY = os.environ.get("TAVILLY_API_KEY")
 
 
 settings = Settings()

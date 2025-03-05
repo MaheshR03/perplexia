@@ -2,14 +2,21 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { ChatWindow } from "../components/chat/ChatWindow";
 import { Layout } from "../components/Layout";
-import { useChat } from "../hooks/useChat";
+import { useChat } from "../context/ChatContext";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
 });
 
 function HomePage() {
-  const { messages, sendMessage, isLoading, messageCount } = useChat();
+  const {
+    messages,
+    sendMessage,
+    isLoading,
+    messageCount,
+    isSearchMode,
+    toggleSearchMode,
+  } = useChat();
 
   // Handle sending a message
   const handleSendMessage = async (message: string) => {
@@ -32,6 +39,8 @@ function HomePage() {
           messages={messages}
           onSendMessage={handleSendMessage}
           isLoading={isLoading}
+          isSearchMode={isSearchMode}
+          toggleSearchMode={toggleSearchMode}
         />
       </div>
     </Layout>

@@ -11,6 +11,8 @@ interface ChatInputProps {
   onSendMessage: (message: string) => void;
   isLoading: boolean;
   sessionId?: number;
+  isSearchMode: boolean;
+  toggleSearchMode: () => void;
 }
 
 export function ChatInput({
@@ -18,6 +20,8 @@ export function ChatInput({
   onSendMessage,
   isLoading,
   sessionId,
+  isSearchMode,
+  toggleSearchMode,
 }: ChatInputProps) {
   const [message, setMessage] = useState("");
 
@@ -50,8 +54,16 @@ export function ChatInput({
               size="icon"
               variant="outline"
               style={{ borderRadius: "50%" }}
+              onClick={toggleSearchMode}
+              className={`${
+                isSearchMode
+                  ? "bg-sky-600 hover:bg-sky-600/70"
+                  : "hover:bg-sky-600"
+              } hover:cursor-pointer`}
             >
-              <Globe className="h-4 w-4" />
+              <Globe
+                className={`h-4 w-4 ${isSearchMode ? "text-slate-100" : ""}`}
+              />
             </Button>
           </div>
 

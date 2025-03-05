@@ -17,6 +17,7 @@ interface AuthContextType {
   clerkUser: any;
   isLoading: boolean;
   authToken: string | null;
+  signOut: () => Promise<void>;
 }
 
 // Create the context

@@ -20,8 +20,8 @@ declare module "@tanstack/react-router" {
   }
 }
 
-// Get your Clerk publishable key
-const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+// Clerk publishable key
+const clerkPubKey = "pk_test_YnVzeS1ibHVlYmlyZC0zNy5jbGVyay5hY2NvdW50cy5kZXYk";
 
 if (!clerkPubKey) {
   throw new Error("Missing Clerk publishable key");

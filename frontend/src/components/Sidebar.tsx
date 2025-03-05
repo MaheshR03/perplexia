@@ -16,6 +16,14 @@ import { ChatSession } from "../types";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { useAuth } from "../hooks/useAuth";
 import { useClerk } from "@clerk/clerk-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
+import { DialogDescription } from "@radix-ui/react-dialog";
 
 // Theme toggle component
 function ThemeToggle() {
@@ -165,6 +173,24 @@ function SidebarContent({
   isAuthenticated,
   signOut,
 }: SidebarContentProps) {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [sessionToDelete, setSessionToDelete] = useState<number | null>(null);
+
+  const handleDeleteClick = (e: React.MouseEvent, sessionId: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSessionToDelete(sessionId);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (sessionToDelete !== null) {
+      onDeleteSession(sessionToDelete);
+      setDeleteDialogOpen(false);
+      setSessionToDelete(null);
+    }
+  };
+
   return (
     <div className="flex h-full flex-col overflow-y-auto bg-background text-foreground p-3 bg-white">
       <div className="mb-4 flex items-center justify-between px-2">
@@ -242,15 +268,36 @@ function SidebarContent({
                         variant="ghost"
                         size="icon"
                         className="h-6 w-6 hover:bg-destructive hover:text-destructive-foreground"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          onDeleteSession(session.id);
-                        }}
+                        onClick={(e) => handleDeleteClick(e, session.id)}
                       >
                         <Trash2 className="h-3 w-3" />
                       </Button>
                     </div>
+                    <Dialog
+                      open={deleteDialogOpen}
+                      onOpenChange={setDeleteDialogOpen}
+                    >
+                      <DialogContent className="bg-white dark:bg-gray-800">
+                        <DialogHeader>
+                          <DialogTitle>Delete {session.name}</DialogTitle>
+                          <DialogDescription>
+                            Are you sure you want to delete this chat? This
+                            action cannot be undone.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                          <Button
+                            variant="outline"
+                            onClick={() => setDeleteDialogOpen(false)}
+                          >
+                            Cancel
+                          </Button>
+                          <Button variant="outline" onClick={confirmDelete}>
+                            Delete
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   </Link>
                 )}
               </div>

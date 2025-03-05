@@ -60,11 +60,11 @@ export function Sidebar({
   return (
     <>
       {/* Mobile Sidebar */}
-      <div className="flex lg:hidden">
+      <div className="flex lg:hidden absolute top-1 left-0 z-50">
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
             <Button variant="ghost" size="icon" className="lg:hidden">
-              <PanelLeft className="h-5 w-5" />
+              <PanelLeft />
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="w-64 p-0">
@@ -83,6 +83,7 @@ export function Sidebar({
                 setIsOpen={setIsOpen}
                 isAuthenticated={isAuthenticated}
                 signOut={signOut}
+                mobile={true}
               />
             </div>
           </SheetContent>
@@ -104,6 +105,7 @@ export function Sidebar({
           currentSessionId={currentSessionId}
           isAuthenticated={isAuthenticated}
           signOut={signOut}
+          mobile={false}
         />
       </div>
     </>
@@ -124,6 +126,7 @@ interface SidebarContentProps {
   setIsOpen?: (open: boolean) => void;
   isAuthenticated: boolean;
   signOut: () => void;
+  mobile: boolean;
 }
 
 function SidebarContent({
@@ -140,6 +143,7 @@ function SidebarContent({
   setIsOpen,
   isAuthenticated,
   signOut,
+  mobile,
 }: SidebarContentProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<number | null>(null);
@@ -160,9 +164,13 @@ function SidebarContent({
   };
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto bg-background text-foreground p-3 bg-[#202222] font-mono">
+    <div
+      className={`flex flex-col overflow-y-auto bg-background text-slate-100 p-3 bg-[#202222] font-mono ${
+        setIsOpen ? "h-full" : ""
+      } ${mobile ? "" : "h-full"} `}
+    >
       <div className="mb-4 flex items-center justify-between px-2">
-        <h2 className="text-lg font-semibold">Perplexia</h2>
+        <h2 className="text-2xl font-semibold font-mono">Perplexia</h2>
         <div className="flex gap-2">
           <Button
             variant="outline"
@@ -220,7 +228,13 @@ function SidebarContent({
                   >
                     <MessageSquare className="h-4 w-4" />
                     <span className="flex-1 truncate">{session.name}</span>
-                    <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div
+                      className={`flex space-x-1 ${
+                        mobile
+                          ? ""
+                          : "opacity-0 group-hover:opacity-100 transition-opacity"
+                      }`}
+                    >
                       <Button
                         variant="ghost"
                         size="icon"

@@ -27,7 +27,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
   return (
     <div
       className={cn(
-        "flex gap-3 p-4 mb-16",
+        "flex gap-2 p-4",
         is_user_message
           ? "bg-muted/50 flex-row-reverse" // Use flex-row-reverse for user messages
           : "bg-background"

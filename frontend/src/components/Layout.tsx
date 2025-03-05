@@ -38,7 +38,7 @@ export function Layout({
           currentSessionId={sessionId}
         />
       )}
-      <main className="relative flex h-full w-full flex-1 flex-col md:px-2">
+      <main className="relative flex h-full w-full flex-1 flex-col">
         {children}
       </main>
     </div>

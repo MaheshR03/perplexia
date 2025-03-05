@@ -37,12 +37,19 @@ export function ChatWindow({
             </div>
           </div>
         ) : (
-          <div className="w-full">
-            {messages.map((message) => (
-              <ChatMessageComponent key={message.id} message={message} />
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
+          <>
+            <div className="h-12 lg:h-0 bg-neutral-800 md:bg-[#191a1a] flex justify-center p-2 fixed top-0 w-full max-w-3xl z-10">
+              <h2 className="text-2xl lg:hidden font-semibold font-mono">
+                Perplexia
+              </h2>
+            </div>
+            <div className="w-full mb-24 mt-12 lg:mt-4">
+              {messages.map((message) => (
+                <ChatMessageComponent key={message.id} message={message} />
+              ))}
+              <div ref={messagesEndRef} />
+            </div>
+          </>
         )}
       </div>
 

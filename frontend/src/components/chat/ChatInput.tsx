@@ -2,7 +2,7 @@
 import { useState, KeyboardEvent, FormEvent } from "react";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
-import { Send, Loader2 } from "lucide-react";
+import { Send, Loader2, Globe } from "lucide-react";
 import { PDFUploader } from "../PDFUploader";
 import { ChatMessage } from "@/types";
 
@@ -44,15 +44,24 @@ export function ChatInput({
     >
       <form onSubmit={handleSendMessage} className="flex flex-col gap-4">
         <div className="flex gap-2">
-          <PDFUploader sessionId={sessionId} />
+          <div className="flex flex-col gap-2">
+            <PDFUploader sessionId={sessionId} />
+            <Button
+              size="icon"
+              variant="outline"
+              style={{ borderRadius: "50%" }}
+            >
+              <Globe className="h-4 w-4" />
+            </Button>
+          </div>
 
-          <div className="relative flex-1">
+          <div className="relative flex-1 max-w-2xl">
             <Textarea
               placeholder="Type your message here..."
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="min-h-12 resize-none pr-12"
+              className="max-h-44 h-full resize-none pr-12"
               disabled={isLoading}
             />
             <Button

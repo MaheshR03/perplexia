@@ -13,25 +13,13 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     # Create Supabase tables (common tables) if they don't exist
     async with engine.begin() as conn:
-        # FIX: Pass the function directly without lambda
+
         await conn.run_sync(Base.metadata.create_all)
     logger.info("Supabase tables verified/created")
 
     # Create NeonDB tables (vector‑specific models) if they don't exist
     async with neon_engine.begin() as neon_conn:
         try:
-            # Install pgvector
-            await neon_conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-            logger.info("pgvector extension created or already exists")
-            
-            # Create helper function for vector conversion
-            await neon_conn.execute(text("""
-                CREATE OR REPLACE FUNCTION array_to_vector(float[]) RETURNS vector
-                AS $$ SELECT $1::vector $$ LANGUAGE SQL IMMUTABLE STRICT;
-            """))
-            logger.info("Vector conversion function created")
-            
-            # Create tables with proper vector support
             await neon_conn.run_sync(NeonBase.metadata.create_all)
             logger.info("Neon tables verified/created")
             

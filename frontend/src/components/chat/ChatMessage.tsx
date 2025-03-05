@@ -1,16 +1,38 @@
-import { User, Bot } from "lucide-react";
+import { User, Bot, Search } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { ChatMessage as ChatMessageType } from "../../types";
 import ReactMarkdown from "react-markdown";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Button } from "../ui/button";
+import { SearchSourcesDialog } from "./SearchSources";
 
 interface ChatMessageProps {
   message: ChatMessageType;
 }
 
 export function ChatMessage({ message }: ChatMessageProps) {
-  const { content, is_user_message } = message;
+  const { content, is_user_message, searchData } = message;
   const [dots, setDots] = useState(".");
+  const [showSourcesDialog, setShowSourcesDialog] = useState(false);
+
+  const parsedSearchData = useMemo(() => {
+    if (!searchData) return null;
+
+    if (typeof searchData === "string") {
+      try {
+        return JSON.parse(searchData);
+      } catch (e) {
+        console.error("Failed to parse search data:", e);
+        return null;
+      }
+    }
+
+    return searchData;
+  }, [searchData]);
+
+  // Check if this message has search data
+  const hasSearchData =
+    !is_user_message && parsedSearchData?.results?.length > 0;
 
   // Animated dots for loading state
   useEffect(() => {
@@ -65,26 +87,43 @@ export function ChatMessage({ message }: ChatMessageProps) {
           )}
         >
           {content ? (
-            <div className="break-words whitespace-pre-line">
-              <ReactMarkdown
-                components={{
-                  pre: ({ node, ...props }) => (
-                    <pre
-                      className="overflow-x-auto max-w-full whitespace-pre-wrap"
-                      {...props}
-                    />
-                  ),
-                  code: ({ node, ...props }) => (
-                    <code
-                      className="break-all whitespace-pre-wrap"
-                      {...props}
-                    />
-                  ),
-                }}
-              >
-                {content}
-              </ReactMarkdown>
-            </div>
+            <>
+              <div className="break-words whitespace-pre-line">
+                <ReactMarkdown
+                  components={{
+                    pre: ({ node, ...props }) => (
+                      <pre
+                        className="overflow-x-auto max-w-full whitespace-pre-wrap"
+                        {...props}
+                      />
+                    ),
+                    code: ({ node, ...props }) => (
+                      <code
+                        className="break-all whitespace-pre-wrap"
+                        {...props}
+                      />
+                    ),
+                  }}
+                >
+                  {content}
+                </ReactMarkdown>
+              </div>
+
+              {/* Only show Sources button if this message has search data */}
+              {hasSearchData && (
+                <div className="mt-2 text-left">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowSourcesDialog(true)}
+                    className="text-xs flex items-center gap-1 text-sky-500 hover:text-sky-400 bg-transparent border-sky-800/30"
+                  >
+                    <Search size={12} />
+                    View Sources
+                  </Button>
+                </div>
+              )}
+            </>
           ) : is_user_message ? null : (
             <div className="flex items-center space-x-2">
               <span className="text-muted-foreground">
@@ -95,6 +134,15 @@ export function ChatMessage({ message }: ChatMessageProps) {
           )}
         </div>
       </div>
+
+      {/* Sources dialog - only rendered if this message has search data */}
+      {hasSearchData && (
+        <SearchSourcesDialog
+          isOpen={showSourcesDialog}
+          onOpenChange={setShowSourcesDialog}
+          searchData={parsedSearchData}
+        />
+      )}
     </div>
   );
 }

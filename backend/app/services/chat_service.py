@@ -160,11 +160,15 @@ async def chat_stream_handler(
                 content=query, 
                 is_user_message=True
             )
+
+            search_data_str = tavily_context if chat_req.isSearchMode else None
+
             bot_message = db_models.ChatMessage(
                 session_id=chat_session_id, 
                 user_id=None, 
                 content=full_answer, 
-                is_user_message=False
+                is_user_message=False,
+                search_data=search_data_str
             )
             db.add_all([user_message, bot_message])
             await db.commit()

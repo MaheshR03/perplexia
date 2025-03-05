@@ -24,7 +24,6 @@ export function useChat(initialSessionId?: number) {
     navigateRef.current = navigate;
   } catch (e) {
     // Navigation isn't available yet, that's okay
-    console.log("Navigation not available yet");
   }
 
   // Add this function to safely handle navigation
@@ -37,8 +36,6 @@ export function useChat(initialSessionId?: number) {
   }, []);
 
   const abortController = useRef<AbortController | null>(null);
-
-  console.log(isSearchMode);
 
   // Derive current session from sessions array and sessionId
   const currentSession = useMemo(() => {
@@ -219,6 +216,28 @@ export function useChat(initialSessionId?: number) {
 
                 if (data.type === "metadata") {
                   const newSessionId = data.data.chat_session_id;
+
+                  if (data.data.search) {
+                    let parsedSearchData;
+                    try {
+                      parsedSearchData =
+                        typeof data.data.search === "string"
+                          ? JSON.parse(data.data.search)
+                          : data.data.search;
+                    } catch (e) {
+                      console.error("Failed to parse search data:", e);
+                      parsedSearchData = { results: [] }; // Fallback
+                    }
+
+                    setMessages((prev) =>
+                      prev.map((msg) =>
+                        msg.id === assistantMessage.id
+                          ? { ...msg, searchData: parsedSearchData }
+                          : msg
+                      )
+                    );
+                  }
+
                   if (!sessionId && newSessionId) {
                     // Update our internal state
                     setSessionId(newSessionId);
@@ -253,7 +272,14 @@ export function useChat(initialSessionId?: number) {
         abortController.current = null;
       }
     },
-    [isAuthenticated, messageCount, sessionId, handleNavigation, fetchSessions]
+    [
+      isAuthenticated,
+      messageCount,
+      sessionId,
+      handleNavigation,
+      fetchSessions,
+      isSearchMode,
+    ]
   );
 
   // Create a new chat session

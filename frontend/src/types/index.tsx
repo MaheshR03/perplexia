@@ -11,6 +11,7 @@ export interface ChatMessage {
   content: string;
   is_user_message: boolean;
   created_at: string;
+  searchData?: any;
 }
 
 export interface ChatSession {

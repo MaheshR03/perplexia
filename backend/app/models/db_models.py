@@ -40,6 +40,7 @@ class ChatMessage(Base):
     content = Column(String)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     is_user_message = Column(Boolean, default=True) # Flag if message is from user or bot
+    search_data = Column(postgresql.JSONB(astext_type=Text), nullable=True)
 
     chat_session = relationship("ChatSession", back_populates="messages", lazy="selectin")
     user = relationship("User") # Optional user relationship

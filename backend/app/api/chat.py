@@ -119,7 +119,8 @@ async def get_chat_session(session_id: int, db: Session = Depends(get_db), curre
             "id": msg.id,
             "content": msg.content,
             "is_user_message": msg.is_user_message,
-            "created_at": msg.created_at
+            "created_at": msg.created_at,
+            "searchData": msg.search_data 
         } for msg in messages]
     }
 

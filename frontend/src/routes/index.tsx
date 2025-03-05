@@ -1,5 +1,5 @@
 // src/routes/index.tsx
-import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ChatWindow } from "../components/chat/ChatWindow";
 import { Layout } from "../components/Layout";
 import { useChat } from "../context/ChatContext";
@@ -18,11 +18,13 @@ function HomePage() {
     toggleSearchMode,
   } = useChat();
 
+  const navigate = useNavigate();
+
   // Handle sending a message
   const handleSendMessage = async (message: string) => {
-    if (messageCount >= 4) {
-      // Redirect to login after 5 messages (0-indexed)
-      Navigate({ to: "/login" });
+    if (messageCount >= 2) {
+      // Redirect to login after 2 messages (0-indexed)
+      navigate({ to: "/login" });
       return;
     }
     await sendMessage(message);

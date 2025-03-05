@@ -173,9 +173,7 @@ export function useChat(initialSessionId?: number) {
 
         // Use fetch to send request with streaming
         const response = await fetch(
-          `${
-            import.meta.env.VITE_API_URL || "http://localhost:8000"
-          }/chat/stream`,
+          `https://perplexia.onrender.com/chat/stream`,
           {
             method: "POST",
             headers: {

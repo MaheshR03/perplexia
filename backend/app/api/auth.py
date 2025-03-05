@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
 from sqlalchemy import select
@@ -115,3 +116,43 @@ async def get_me(current_user: db_models.User = Depends(get_current_user)):
         "email": current_user.email,
         "username": current_user.username
     }
+
+async def get_optional_current_user(authorization: str = Header(None), db = Depends(get_db)) -> Optional[db_models.User]:
+    """Like get_current_user but returns None for unauthenticated requests instead of 401."""
+    if not authorization:
+        return None
+    
+    try:
+        token = authorization.split(" ")[1]  # Assuming "Bearer <token>" format
+        
+        # Get the JWT payload
+        payload = await verify_jwt(token)
+        
+        # Extract user ID from verified JWT
+        clerk_user_id = payload.get('sub')
+        if not clerk_user_id:
+            return None
+        
+        # Find user in database using async query style
+        stmt = select(db_models.User).where(db_models.User.clerk_user_id == clerk_user_id)
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
+        
+        if not user:
+            # Create a new user
+            email = payload.get('email')
+            user = db_models.User(
+                clerk_user_id=clerk_user_id,
+                username=clerk_user_id.split('_')[-1],
+                email=email
+            )
+            db.add(user)
+            await db.commit()
+            await db.refresh(user)
+        
+        return user
+            
+    except (HTTPException, Exception) as e:
+        # Log the error but return None instead of raising an exception
+        logger.info(f"Optional auth failed: {e}")
+        return None

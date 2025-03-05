@@ -1,3 +1,5 @@
+from typing import Optional
+import uuid
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
 import time
@@ -22,10 +24,40 @@ async def chat_stream_endpoint(
     chat_req: ChatRequest,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: db_models.User = Depends(auth.get_current_user)
+    current_user: Optional[db_models.User] = Depends(auth.get_optional_current_user)
 ):
-    """Chat stream endpoint - now calling the handler."""
-    return await chat_service.chat_stream_handler(chat_req, request, db, current_user)
+    """Chat stream endpoint that works for both authenticated and anonymous users."""
+    # Check anonymous message limit if user is not authenticated
+    if not current_user:
+        # Get anonymous session from cookies or create one
+        anonymous_session_id = request.cookies.get("anonymous_session_id")
+        
+        if not anonymous_session_id:
+            # First message from this anonymous user
+            anonymous_session_id = str(uuid.uuid4())
+        else:
+            # Check message count for this anonymous session
+            message_count = await chat_service.get_anonymous_message_count(db, anonymous_session_id)
+            if message_count >= 3:
+                # Limit reached, return 403 error
+                raise HTTPException(
+                    status_code=403,
+                    detail="Message limit reached for anonymous users. Please sign in to continue chatting."
+                )
+    
+    response = await chat_service.chat_stream_handler(chat_req, request, db, current_user, anonymous_session_id if not current_user else None)
+    
+    # If anonymous user, set cookie with session ID
+    if not current_user:
+        response.set_cookie(
+            key="anonymous_session_id",
+            value=anonymous_session_id,
+            httponly=True,
+            max_age=60*60*24*7,  # 1 week
+            samesite="lax"
+        )
+    
+    return response
 
 
 @router.get("/sessions", response_model=list[dict]) 

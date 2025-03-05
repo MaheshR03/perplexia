@@ -144,8 +144,8 @@ export function useChat(initialSessionId?: number) {
         };
         setMessages((prev) => [...prev, assistantMessage]);
 
-        // Check if login is required (after 5 messages for non‑authenticated users)
-        if (!isAuthenticated && messageCount >= 4) {
+        // Check if login is required (after 3 messages for non-authenticated users)
+        if (!isAuthenticated && messageCount >= 2) {
           navigate({ to: "/login" });
           return;
         }

@@ -8,50 +8,68 @@ from app.services import neon_service, tavily_service, gemini_service, embedding
 from app.models.chat_models import ChatRequest
 from app.models import db_models
 import logging
+from typing import Optional
 
 logger = logging.getLogger(__name__)
+_anonymous_message_counts = {}
 
-async def chat_stream_handler(chat_req: ChatRequest, request: Request, db: Session, current_user: db_models.User) -> StreamingResponse:
-    """Handles the chat stream logic, offloaded from the route."""
+async def chat_stream_handler(
+    chat_req: ChatRequest, 
+    request: Request, 
+    db: Session, 
+    current_user: Optional[db_models.User],
+    anonymous_session_id: Optional[str] = None
+) -> StreamingResponse:
+    """Handles the chat stream logic for both authenticated and anonymous users."""
     query = chat_req.query
     start_time = time.time()
     session_id = chat_req.session_id
     
     # Create or get chat session
-    if session_id:
-        session_result = await db.execute(
-            select(db_models.ChatSession).filter(
-                db_models.ChatSession.id == session_id, 
-                db_models.ChatSession.user_id == current_user.id
+    if current_user:
+        # Authenticated user flow (existing code)
+        if session_id:
+            session_result = await db.execute(
+                select(db_models.ChatSession).filter(
+                    db_models.ChatSession.id == session_id, 
+                    db_models.ChatSession.user_id == current_user.id
+                )
             )
-        )
-        chat_session = session_result.scalar_one_or_none()
-        if not chat_session:
-            raise HTTPException(status_code=404, detail="Chat session not found or not owned by user")
-        chat_session_id = session_id
-        
-        # Retrieve PDFs associated with this session from database
-        session_pdfs_result = await db.execute(
-            select(db_models.ChatSessionPDF.pdf_document_id).where(
-                db_models.ChatSessionPDF.chat_session_id == chat_session_id
+            chat_session = session_result.scalar_one_or_none()
+            if not chat_session:
+                raise HTTPException(status_code=404, detail="Chat session not found or not owned by user")
+            chat_session_id = session_id
+            
+            # Retrieve PDFs associated with this session
+            session_pdfs_result = await db.execute(
+                select(db_models.ChatSessionPDF.pdf_document_id).where(
+                    db_models.ChatSessionPDF.chat_session_id == chat_session_id
+                )
             )
-        )
-        context_pdfs = [pdf_id for pdf_id, in session_pdfs_result]
-        logger.info(f"Retrieved {len(context_pdfs)} PDFs from session {chat_session_id}")
+            context_pdfs = [pdf_id for pdf_id, in session_pdfs_result]
+        else:
+            # Create new session for authenticated user
+            chat_session = db_models.ChatSession(user_id=current_user.id)
+            db.add(chat_session)
+            await db.commit()
+            await db.refresh(chat_session)
+            chat_session_id = chat_session.id
+            context_pdfs = []
     else:
-        # For new sessions, no PDFs are associated yet
-        chat_session = db_models.ChatSession(user_id=current_user.id)
-        db.add(chat_session)
-        await db.commit()
-        await db.refresh(chat_session)
-        chat_session_id = chat_session.id
+        # Anonymous user flow
+        chat_session_id = f"anon_{anonymous_session_id}"
         context_pdfs = []
-
-    chat_history_str = await get_chat_history_str(db, chat_session_id)
+        
+        # For anonymous users, no need to store in DB, just track in memory or Redis
+        # You could use a lightweight Redis or in-memory store to track anonymous sessions
+        
+    # Continue with the existing code...
+    chat_history_str = await get_chat_history_str(db, chat_session_id) if current_user else ""
     
     # PDF context processing
     pdf_context = ""
-    if context_pdfs:
+    if current_user and context_pdfs:
+        # Only authenticated users can access PDFs
         try:
             query_embedding = embedding_service.get_embedding(query)
             
@@ -82,7 +100,7 @@ async def chat_stream_handler(chat_req: ChatRequest, request: Request, db: Sessi
             tavily_context = "No additional web info found."
 
     prompt = f"""
-    You are a helpful assistant. Use the context provided to answer the user question at the end.
+    You are a helpful assistant. Use the context if provided to answer the user question at the end.
 
     **Document Context:**
     {pdf_context}
@@ -93,8 +111,19 @@ async def chat_stream_handler(chat_req: ChatRequest, request: Request, db: Sessi
     **User Question:** {query}"""
     print(prompt)
     async def sse_generator():
+        
+        current_count = 0
+        if not current_user and anonymous_session_id:
+            current_count = await get_anonymous_message_count(anonymous_session_id)
+
         # Send metadata with session ID first
-        metadata = {"search": tavily_context, "duration": time.time() - start_time, "chat_session_id": chat_session_id}
+        metadata = {
+            "search": tavily_context, 
+            "duration": time.time() - start_time, 
+            "chat_session_id": chat_session_id if current_user else None,
+            "anonymous": current_user is None,
+            "message_count": current_count if not current_user else None
+        }
         yield f"data: {json.dumps({'type': 'metadata', 'data': metadata})}\n\n"
 
         full_answer = ""
@@ -117,15 +146,23 @@ async def chat_stream_handler(chat_req: ChatRequest, request: Request, db: Sessi
                 logger.error(f"Error processing chunk: {e}")
                 continue
 
-        # Save the messages to the database
-        user_message = db_models.ChatMessage(
-            session_id=chat_session_id, user_id=current_user.id, content=query, is_user_message=True
-        )
-        bot_message = db_models.ChatMessage(
-            session_id=chat_session_id, user_id=None, content=full_answer, is_user_message=False
-        )
-        db.add_all([user_message, bot_message])
-        await db.commit()
+        # Save messages for authenticated users only
+        if current_user:
+            # Save the messages to the database (existing code)
+            user_message = db_models.ChatMessage(
+                session_id=chat_session_id, 
+                user_id=current_user.id, 
+                content=query, 
+                is_user_message=True
+            )
+            bot_message = db_models.ChatMessage(
+                session_id=chat_session_id, 
+                user_id=None, 
+                content=full_answer, 
+                is_user_message=False
+            )
+            db.add_all([user_message, bot_message])
+            await db.commit()
         
         # Send completion notification
         yield f"data: {json.dumps({'type': 'end'})}\n\n"
@@ -152,3 +189,13 @@ async def get_chat_history_str(db: Session, chat_session_id: int) -> str:
             chat_history.append(f"{role}: {msg.content}")
     
     return "\n".join(chat_history) if chat_history else "No previous messages in this chat."
+
+
+async def get_anonymous_message_count(anonymous_session_id: str) -> int:
+    """Track and return the number of messages sent by an anonymous user."""
+    global _anonymous_message_counts
+    
+    current_count = _anonymous_message_counts.get(anonymous_session_id, 0)
+    _anonymous_message_counts[anonymous_session_id] = current_count + 1
+    
+    return current_count

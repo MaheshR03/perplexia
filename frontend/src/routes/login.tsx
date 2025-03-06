@@ -23,7 +23,7 @@ function LoginPage() {
           path="/login"
           routing="path"
           signUpUrl="/register"
-          forceRedirectUrl="/chat"
+          forceRedirectUrl="/"
           appearance={{
             baseTheme: dark,
             variables: {

@@ -1,9 +1,9 @@
 // src/routes/login.tsx
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { SignIn } from "@clerk/clerk-react";
+import { SignUp } from "@clerk/clerk-react";
 import { dark } from "@clerk/themes";
 
-export const Route = createFileRoute("/login")({
+export const Route = createFileRoute("/register/")({
   component: LoginPage,
   beforeLoad: async ({}) => {
     // Check if the user is already authenticated and redirect them if they are
@@ -19,11 +19,11 @@ function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#191a1a]">
       <div className="w-full max-w-md">
-        <SignIn
-          path="/login"
+        <SignUp
+          path="/register"
           routing="path"
-          signUpUrl="/register"
-          forceRedirectUrl="/"
+          signInUrl="/login"
+          fallbackRedirectUrl="/"
           appearance={{
             baseTheme: dark,
             variables: {

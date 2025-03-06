@@ -11,19 +11,16 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
-import { Route as LoginImport } from './routes/login'
 import { Route as SplatImport } from './routes/$'
 import { Route as IndexImport } from './routes/index'
+import { Route as RegisterIndexImport } from './routes/register/index'
+import { Route as LoginIndexImport } from './routes/login/index'
 import { Route as ChatIndexImport } from './routes/chat/index'
+import { Route as RegisterSplatImport } from './routes/register/$'
+import { Route as LoginSplatImport } from './routes/login/$'
 import { Route as ChatSessionIdImport } from './routes/chat/$sessionId'
 
 // Create/Update Routes
-
-const LoginRoute = LoginImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRoute,
-} as any)
 
 const SplatRoute = SplatImport.update({
   id: '/$',
@@ -37,9 +34,33 @@ const IndexRoute = IndexImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const RegisterIndexRoute = RegisterIndexImport.update({
+  id: '/register/',
+  path: '/register/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const LoginIndexRoute = LoginIndexImport.update({
+  id: '/login/',
+  path: '/login/',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const ChatIndexRoute = ChatIndexImport.update({
   id: '/chat/',
   path: '/chat/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const RegisterSplatRoute = RegisterSplatImport.update({
+  id: '/register/$',
+  path: '/register/$',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const LoginSplatRoute = LoginSplatImport.update({
+  id: '/login/$',
+  path: '/login/$',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -67,13 +88,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SplatImport
       parentRoute: typeof rootRoute
     }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginImport
-      parentRoute: typeof rootRoute
-    }
     '/chat/$sessionId': {
       id: '/chat/$sessionId'
       path: '/chat/$sessionId'
@@ -81,11 +95,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChatSessionIdImport
       parentRoute: typeof rootRoute
     }
+    '/login/$': {
+      id: '/login/$'
+      path: '/login/$'
+      fullPath: '/login/$'
+      preLoaderRoute: typeof LoginSplatImport
+      parentRoute: typeof rootRoute
+    }
+    '/register/$': {
+      id: '/register/$'
+      path: '/register/$'
+      fullPath: '/register/$'
+      preLoaderRoute: typeof RegisterSplatImport
+      parentRoute: typeof rootRoute
+    }
     '/chat/': {
       id: '/chat/'
       path: '/chat'
       fullPath: '/chat'
       preLoaderRoute: typeof ChatIndexImport
+      parentRoute: typeof rootRoute
+    }
+    '/login/': {
+      id: '/login/'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginIndexImport
+      parentRoute: typeof rootRoute
+    }
+    '/register/': {
+      id: '/register/'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterIndexImport
       parentRoute: typeof rootRoute
     }
   }
@@ -96,51 +138,91 @@ declare module '@tanstack/react-router' {
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
-  '/login': typeof LoginRoute
   '/chat/$sessionId': typeof ChatSessionIdRoute
+  '/login/$': typeof LoginSplatRoute
+  '/register/$': typeof RegisterSplatRoute
   '/chat': typeof ChatIndexRoute
+  '/login': typeof LoginIndexRoute
+  '/register': typeof RegisterIndexRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
-  '/login': typeof LoginRoute
   '/chat/$sessionId': typeof ChatSessionIdRoute
+  '/login/$': typeof LoginSplatRoute
+  '/register/$': typeof RegisterSplatRoute
   '/chat': typeof ChatIndexRoute
+  '/login': typeof LoginIndexRoute
+  '/register': typeof RegisterIndexRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
-  '/login': typeof LoginRoute
   '/chat/$sessionId': typeof ChatSessionIdRoute
+  '/login/$': typeof LoginSplatRoute
+  '/register/$': typeof RegisterSplatRoute
   '/chat/': typeof ChatIndexRoute
+  '/login/': typeof LoginIndexRoute
+  '/register/': typeof RegisterIndexRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/$' | '/login' | '/chat/$sessionId' | '/chat'
+  fullPaths:
+    | '/'
+    | '/$'
+    | '/chat/$sessionId'
+    | '/login/$'
+    | '/register/$'
+    | '/chat'
+    | '/login'
+    | '/register'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/$' | '/login' | '/chat/$sessionId' | '/chat'
-  id: '__root__' | '/' | '/$' | '/login' | '/chat/$sessionId' | '/chat/'
+  to:
+    | '/'
+    | '/$'
+    | '/chat/$sessionId'
+    | '/login/$'
+    | '/register/$'
+    | '/chat'
+    | '/login'
+    | '/register'
+  id:
+    | '__root__'
+    | '/'
+    | '/$'
+    | '/chat/$sessionId'
+    | '/login/$'
+    | '/register/$'
+    | '/chat/'
+    | '/login/'
+    | '/register/'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SplatRoute: typeof SplatRoute
-  LoginRoute: typeof LoginRoute
   ChatSessionIdRoute: typeof ChatSessionIdRoute
+  LoginSplatRoute: typeof LoginSplatRoute
+  RegisterSplatRoute: typeof RegisterSplatRoute
   ChatIndexRoute: typeof ChatIndexRoute
+  LoginIndexRoute: typeof LoginIndexRoute
+  RegisterIndexRoute: typeof RegisterIndexRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SplatRoute: SplatRoute,
-  LoginRoute: LoginRoute,
   ChatSessionIdRoute: ChatSessionIdRoute,
+  LoginSplatRoute: LoginSplatRoute,
+  RegisterSplatRoute: RegisterSplatRoute,
   ChatIndexRoute: ChatIndexRoute,
+  LoginIndexRoute: LoginIndexRoute,
+  RegisterIndexRoute: RegisterIndexRoute,
 }
 
 export const routeTree = rootRoute
@@ -155,9 +237,12 @@ export const routeTree = rootRoute
       "children": [
         "/",
         "/$",
-        "/login",
         "/chat/$sessionId",
-        "/chat/"
+        "/login/$",
+        "/register/$",
+        "/chat/",
+        "/login/",
+        "/register/"
       ]
     },
     "/": {
@@ -166,14 +251,23 @@ export const routeTree = rootRoute
     "/$": {
       "filePath": "$.tsx"
     },
-    "/login": {
-      "filePath": "login.tsx"
-    },
     "/chat/$sessionId": {
       "filePath": "chat/$sessionId.tsx"
     },
+    "/login/$": {
+      "filePath": "login/$.tsx"
+    },
+    "/register/$": {
+      "filePath": "register/$.tsx"
+    },
     "/chat/": {
       "filePath": "chat/index.tsx"
+    },
+    "/login/": {
+      "filePath": "login/index.tsx"
+    },
+    "/register/": {
+      "filePath": "register/index.tsx"
     }
   }
 }

@@ -1,8 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 
-// This is a catch-all route that will match any URL that doesn't match other routes
-export const Route = createFileRoute("/$")({
+export const Route = createFileRoute("/register/$")({
   component: CatchAllRoute,
 });
 
@@ -10,7 +9,7 @@ function CatchAllRoute() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    navigate({ to: "/", replace: true });
+    navigate({ to: "/login", replace: true });
   }, [navigate]);
 
   return (

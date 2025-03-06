@@ -90,6 +90,32 @@ async def list_chat_sessions(db: Session = Depends(get_db), current_user: db_mod
         "message_count": session.message_count
     } for session in sessions]
 
+@router.post("/sessions", response_model=dict)
+async def create_chat_session(
+    session_data: dict,
+    db: Session = Depends(get_db),
+    current_user: db_models.User = Depends(auth.get_current_user)
+):
+    """Creates a new chat session."""
+    # Create a new session with optional name from request data
+    name = session_data.get("name", "New Chat")
+    
+    # Create the session
+    chat_session = db_models.ChatSession(
+        user_id=current_user.id,
+        name=name
+    )
+    db.add(chat_session)
+    await db.commit()
+    await db.refresh(chat_session)
+    
+    return {
+        "id": chat_session.id,
+        "name": chat_session.name,
+        "created_at": chat_session.created_at,
+        "message_count": 0
+    }
+
 @router.get("/sessions/{session_id}", response_model=dict) 
 async def get_chat_session(session_id: int, db: Session = Depends(get_db), current_user: db_models.User = Depends(auth.get_current_user)):
     """Gets details of a specific chat session including messages."""

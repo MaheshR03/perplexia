@@ -5,7 +5,7 @@ import { File, FileUp, Loader2, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import api, { pdfApi } from "../lib/api";
 import { PdfDocument } from "../types";
-import { redirect } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useAuth } from "../context/AuthContext";
 
 interface PDFUploaderProps {
@@ -20,6 +20,8 @@ export function PDFUploader({ sessionId }: PDFUploaderProps) {
   const [sessionPdfs, setSessionPdfs] = useState<PdfDocument[]>([]);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
   // Fetch PDFs when dialog opens
   const handleOpenDialog = async () => {
@@ -105,8 +107,6 @@ export function PDFUploader({ sessionId }: PDFUploaderProps) {
       } else {
         // Create a new session if user is authenticated but no session exists
         try {
-          const { isAuthenticated } = useAuth();
-
           if (isAuthenticated) {
             // Create a new session with a name based on the PDF
             const sessionName = `Chat about ${file.name}`;
@@ -119,7 +119,7 @@ export function PDFUploader({ sessionId }: PDFUploaderProps) {
               await pdfApi.addPdfToSession(newSession.id, data.id);
 
               // Navigate to the new session
-              redirect({
+              navigate({
                 to: "/chat/$sessionId",
                 params: { sessionId: newSession.id },
               });

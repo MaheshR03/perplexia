@@ -1,12 +1,15 @@
-// src/routes/_app.tsx
-import { Outlet, createRootRoute } from "@tanstack/react-router";
 import { Toaster } from "../components/ui/sonner";
+import { Outlet, createRootRoute } from "@tanstack/react-router";
 
 export const Route = createRootRoute({
-  component: () => (
-    <div className="min-h-screen bg-background">
+  component: Root,
+});
+
+function Root() {
+  return (
+    <>
       <Outlet />
       <Toaster />
-    </div>
-  ),
-});
+    </>
+  );
+}

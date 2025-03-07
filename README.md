@@ -1,6 +1,6 @@
 # Perplexia
 
-Perplexia is an AI-powered chat application that enhances conversations with real-time web search and document processing capabilities.
+Perplexia is an AI-powered RAG chat application that enhances conversations with real-time web search and document processing capabilities.
 
 ## ✨ Features
 

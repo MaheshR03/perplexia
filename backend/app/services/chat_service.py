@@ -100,7 +100,7 @@ async def chat_stream_handler(
             tavily_context = "No additional web info found."
 
     prompt = f"""
-    You are a helpful assistant. Use all the context if provided to answer the user question at the end.
+    You are a helpful assistant. Answer the user's question based on the provided information.
 
     {chat_req.isSearchMode and f'''
     **Web Search Results:**
@@ -113,7 +113,20 @@ async def chat_stream_handler(
     **Chat History:**
     {chat_history_str}
 
-    **User Question:** {query}"""
+    **User Question:** {query}
+
+    Instructions:
+    1. Maintain the conversation flow by referring to previous exchanges when relevant.
+    3. When including code snippets:
+    - Use triple backticks with the language name for syntax highlighting (```python, ```javascript, etc.)
+    - Ensure code is properly indented and follows best practices
+    - Add brief comments explaining key parts of the code
+    - For React code, use ```jsx for proper syntax highlighting
+    4. Provide clear explanations and examples to help the user understand the topic.
+    5. Provide Code examples when possible to help the user implement the solution.
+    6. If you need more information, ask the user for clarification.
+    7. If you need to search the web for more information, let the user know."""
+
     print(prompt)
     async def sse_generator():
         

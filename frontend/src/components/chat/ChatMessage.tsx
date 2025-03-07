@@ -2,6 +2,8 @@ import { User, Bot, Search } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { ChatMessage as ChatMessageType } from "../../types";
 import ReactMarkdown from "react-markdown";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { nord } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "../ui/button";
 import { SearchSourcesDialog } from "./SearchSources";
@@ -91,18 +93,46 @@ export function ChatMessage({ message }: ChatMessageProps) {
               <div className="break-words whitespace-pre-line">
                 <ReactMarkdown
                   components={{
-                    pre: ({ node, ...props }) => (
-                      <pre
-                        className="overflow-x-auto max-w-full whitespace-pre-wrap"
-                        {...props}
-                      />
-                    ),
-                    code: ({ node, ...props }) => (
-                      <code
-                        className="break-all whitespace-pre-wrap"
-                        {...props}
-                      />
-                    ),
+                    // Enhanced code block with syntax highlighting
+                    pre: ({ node, ...props }) => <pre {...props} />,
+                    code: ({ node, className, children, ...props }) => {
+                      // Extract language from className which comes in format "language-xxx"
+                      const match = /language-(\w+)/.exec(className || "");
+                      const language = match ? match[1] : "";
+
+                      // Check if this is an inline code or a code block
+                      const isInline = !className;
+
+                      return isInline ? (
+                        // For inline code
+                        <code
+                          className="px-1 py-0.5 bg-zinc-800 rounded text-sm font-mono break-words"
+                          {...props}
+                        >
+                          {children}
+                        </code>
+                      ) : (
+                        // For code blocks with syntax highlighting
+                        <div className="relative rounded-md overflow-hidden my-4">
+                          <div className="absolute right-2 top-2 text-xs text-white/80 bg-black/30 px-2 py-0.5 rounded">
+                            {language}
+                          </div>
+                          <SyntaxHighlighter
+                            language={language}
+                            style={nord}
+                            customStyle={{
+                              margin: 0,
+                              borderRadius: "0.375rem",
+                              padding: "2.5rem 1rem 1rem 1rem",
+                            }}
+                            wrapLines={true}
+                            wrapLongLines={true}
+                          >
+                            {String(children).replace(/\n$/, "")}
+                          </SyntaxHighlighter>
+                        </div>
+                      );
+                    },
                   }}
                 >
                   {content}

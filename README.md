@@ -48,8 +48,6 @@ Perplexia is an AI-powered RAG chat application that enhances conversations with
 
 ### Backend Setup
 
-`bash
-
 # Clone the repository
 ```
 git clone https://github.com/Ad1tyaNarayana/perplexia.git

@@ -1,4 +1,3 @@
-// src/routes/login.tsx
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { SignUp } from "@clerk/clerk-react";
 import { dark } from "@clerk/themes";

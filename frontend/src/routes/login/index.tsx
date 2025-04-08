@@ -22,7 +22,7 @@ function LoginPage() {
         <SignIn
           path="/login"
           routing="path"
-          signInUrl="/register"
+          signInUrl="/login"
           fallbackRedirectUrl="/"
           appearance={{
             baseTheme: dark,

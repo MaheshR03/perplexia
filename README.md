@@ -1,6 +1,6 @@
 # Perplexia
 
-> CSE Final year undergraduate project
+> Final year CSE undergraduate project
 
 Perplexia is an AI-powered RAG chat application that enhances conversations with real-time web search and document processing capabilities.
 
